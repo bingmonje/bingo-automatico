@@ -870,9 +870,19 @@ let temporizadorReinicio = null;
     }
 
     function obtenerUniversoCartones() {
-      // Cada pestaña procesa solo los cartones de su jugador. La RPC valida
-      // y calcula todos los ganadores en Postgres antes de acreditar premios.
-      return [...cartonesComprados];
+      // Siempre procesa los cartones propios y, al mirar "Otros", solo los
+      // diez visibles. Así se actualiza la pantalla sin recalcular hasta 1.000
+      // cartones en cada pestaña por cada bola.
+      const universo = new Set(cartonesComprados);
+
+      if (modoVistaCartones === 'todos') {
+        const inicio = (paginaActualCartones - 1) * CARTONES_POR_PAGINA;
+        obtenerCartonesVisibles()
+          .slice(inicio, inicio + CARTONES_POR_PAGINA)
+          .forEach(item => universo.add(Number(item.numero_carton)));
+      }
+
+      return Array.from(universo);
     }
 
     function formatearBs(valor) {
@@ -1104,7 +1114,7 @@ let temporizadorReinicio = null;
 
       cartonesPagina.forEach((item) => {
         const numeroCarton = Number(item.numero_carton);
-        asegurarTrackingCarton(numeroCarton);
+        sincronizarCartonConBolasCantadas(numeroCarton);
         const carton = generarCartonDesdeNumero(numeroCarton);
         const section = document.createElement('div');
         section.className = 'carton-section';
@@ -1133,6 +1143,17 @@ let temporizadorReinicio = null;
       });
 
       actualizarPaginacionCartones();
+    }
+
+    function sincronizarCartonConBolasCantadas(numeroCarton) {
+      const marcados = asegurarTrackingCarton(numeroCarton);
+      if (!bolasCantadas.length) return;
+
+      const carton = generarCartonDesdeNumero(numeroCarton);
+      const numerosCarton = new Set(Object.values(carton).flat());
+      bolasCantadas.forEach(numero => {
+        if (numerosCarton.has(Number(numero))) marcados.add(Number(numero));
+      });
     }
 
     function hidratarCartonRenderizado(numeroCarton) {
@@ -1604,7 +1625,11 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
       bolasCantadas.push(bola.numero);
 
       obtenerUniversoCartones().forEach(numCarton => {
-        marcarNumeroEnCarton(numCarton, bola.numero);
+        marcarNumeroEnCarton(
+          numCarton,
+          bola.numero,
+          cartonesComprados.includes(Number(numCarton))
+        );
       });
     }
 
@@ -1636,7 +1661,7 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
   return false;
 }
 
-function marcarNumeroEnCarton(numeroCarton, numero) {
+function marcarNumeroEnCarton(numeroCarton, numero, verificarPremios = true) {
   asegurarTrackingCarton(numeroCarton);
 
   // Validar contra el cartón real, no contra lo visible en pantalla
@@ -1663,7 +1688,7 @@ function marcarNumeroEnCarton(numeroCarton, numero) {
 
   if (!yaMarcado) {
     actualizarProgreso(numeroCarton);
-    verificarPremiosSecuenciales(numeroCarton);
+    if (verificarPremios) verificarPremiosSecuenciales(numeroCarton);
   }
 }
 
