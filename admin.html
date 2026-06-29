@@ -2090,45 +2090,12 @@ async function cargarAjustes() {
         gameTimerInterval = null;
       }
 
-      if (currentGame?.estado === 'jugando') {
-        const { error } = await supabaseClient
-          .from('bingo_automatico')
-          .update({
-            estado: 'finalizado',
-            finalizado_en: new Date().toISOString()
-          })
-          .eq('id', currentGame.id);
+      const { data: reinicio, error: reinicioError } = await supabaseClient
+        .rpc('bingo_admin_reiniciar_ventas');
 
-        if (error) {
-          errores.push('No se pudo finalizar el juego actual: ' + error.message);
-        }
-      }
-
-      const { error: deleteApartadosError } = await supabaseClient
-        .from('cartones_apartados')
-        .delete()
-        .gte('numero_carton', 1);
-
-      if (deleteApartadosError) {
-        errores.push('No se pudieron borrar los apartados: ' + deleteApartadosError.message);
-      }
-
-      const { error: deleteVendidosError } = await supabaseClient
-        .from('cartones_vendidos')
-        .delete()
-        .gte('numero_carton', 1);
-
-      if (deleteVendidosError) {
-        errores.push('No se pudieron borrar los vendidos: ' + deleteVendidosError.message);
-      }
-
-      const { error: resetComprasError } = await supabaseClient
-        .from('apartados_temp')
-        .update({ estado: 'rechazado' })
-        .in('estado', ['apartado', 'pendiente', 'aprobado']);
-
-      if (resetComprasError) {
-        errores.push('No se pudieron marcar las compras como rechazadas: ' + resetComprasError.message);
+      if (reinicioError || !reinicio?.ok) {
+        errores.push('No se pudo reiniciar el sistema de cartones: ' +
+          (reinicioError?.message || reinicio?.codigo || 'error desconocido'));
       }
 
       document.getElementById('winnerDisplay').classList.remove('active');
