@@ -811,6 +811,8 @@ let temporizadorReinicio = null;
     let refrescoPremiosTimer = null;
     let cuentaJuegoTimer = null;
     let juegoCuentaActual = null;
+    let minimoCartonesInicio = 15;
+    let cartonesVendidosProgramacion = 0;
 
     const RANGOS = {
       B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75]
@@ -940,6 +942,9 @@ let temporizadorReinicio = null;
         jugadores: Number(data?.jugadores || 0)
       };
 
+      cartonesVendidosProgramacion = resumenPremios.cartones;
+      actualizarCuentaJuegoCliente(juegoCuentaActual);
+
       actualizarResumenPremiosUI();
     }
 
@@ -960,6 +965,9 @@ let temporizadorReinicio = null;
         cedula: item.cedula || '',
         telefono: item.telefono || ''
       }));
+
+      cartonesVendidosProgramacion = cartonesEnSala.length;
+      actualizarCuentaJuegoCliente(juegoCuentaActual);
 
       cartonesEnSala.forEach(item => asegurarTrackingCarton(item.numero_carton));
       actualizarResumenPremiosUI();
@@ -1513,6 +1521,13 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
             recibirBola(payload.new);
           }
         )
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'cartones_vendidos' },
+          () => {
+            programarRefrescoPremios();
+            programarRefrescoCartones();
+          }
+        )
         .subscribe();
 
       suscripciones.push(salaSub);
@@ -1544,7 +1559,10 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
 
         cuenta.classList.remove('live');
         if (juegoCuentaActual?.estado === 'esperando' && juegoCuentaActual.proximo_juego_en) {
-          cuenta.textContent = `⏳ Próximo juego empieza en ${formatearCuentaRegresivaCliente(juegoCuentaActual.proximo_juego_en)} · ventas abiertas`;
+          const faltantes = Math.max(0, minimoCartonesInicio - cartonesVendidosProgramacion);
+          cuenta.textContent = faltantes > 0
+            ? `⏳ Próxima revisión en ${formatearCuentaRegresivaCliente(juegoCuentaActual.proximo_juego_en)} · ${cartonesVendidosProgramacion}/${minimoCartonesInicio} cartones · faltan ${faltantes} para empezar`
+            : `✅ Mínimo alcanzado (${cartonesVendidosProgramacion}/${minimoCartonesInicio}) · el juego empieza en ${formatearCuentaRegresivaCliente(juegoCuentaActual.proximo_juego_en)}`;
         } else if (juegoCuentaActual?.estado === 'finalizado') {
           cuenta.textContent = '🏁 Juego terminado · preparando la venta para la próxima partida';
         } else {
@@ -1581,14 +1599,13 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
 
     async function verificarEstadoActual() {
   try {
-    const { data, error } = await supabaseClient
-      .from('bingo_automatico')
-      .select('*')
-      .order('id', { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const { data: estadoProgramacion, error } = await supabaseClient
+      .rpc('bingo_estado_programacion');
 
     if (error) throw error;
+    const data = estadoProgramacion?.juego || null;
+    minimoCartonesInicio = Number(estadoProgramacion?.minimo_cartones || 15);
+    cartonesVendidosProgramacion = Number(estadoProgramacion?.cartones_vendidos || 0);
     if (!data) {
       actualizarCuentaJuegoCliente(null);
       return;
