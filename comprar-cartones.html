@@ -1040,6 +1040,8 @@
     let ventasCerradas = false;
     let juegoProgramacionActual = null;
     let programacionVisualTimer = null;
+    let minimoCartonesInicio = 15;
+    let cartonesVendidosProgramacion = 0;
     let cartonPreviewNumero = null;
 let cantidadCartonesDisponibles = 1000;
     let rotacionCartones = 0;
@@ -1071,22 +1073,20 @@ function requerirSesion() {
 
 async function verificarVentasAbiertas() {
   const { data, error } = await supabaseClient
-    .from('bingo_automatico')
-    .select('id, estado, proximo_juego_en, fin_estimado_en, auto_bolas')
-    .order('id', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .rpc('bingo_estado_programacion');
 
   if (error) {
     console.error('Error verificando el estado de ventas:', error);
     return true;
   }
 
-  juegoProgramacionActual = data || null;
+  juegoProgramacionActual = data?.juego || null;
+  minimoCartonesInicio = Number(data?.minimo_cartones || 15);
+  cartonesVendidosProgramacion = Number(data?.cartones_vendidos || 0);
   actualizarProgramacionVentas(juegoProgramacionActual);
 
-  if (data?.estado === 'jugando') {
-    mostrarVentasCerradas(data);
+  if (juegoProgramacionActual?.estado === 'jugando') {
+    mostrarVentasCerradas(juegoProgramacionActual);
     return false;
   }
 
@@ -1122,7 +1122,10 @@ function actualizarProgramacionVentas(juego) {
 
     banner.classList.remove('live');
     if (juegoProgramacionActual?.estado === 'esperando' && juegoProgramacionActual.proximo_juego_en) {
-      banner.textContent = `⏳ Próximo juego empieza en ${formatearCuentaRegresivaVentas(juegoProgramacionActual.proximo_juego_en)} · compra antes de llegar a cero`;
+      const faltantes = Math.max(0, minimoCartonesInicio - cartonesVendidosProgramacion);
+      banner.textContent = faltantes > 0
+        ? `⏳ Próxima revisión en ${formatearCuentaRegresivaVentas(juegoProgramacionActual.proximo_juego_en)} · ${cartonesVendidosProgramacion}/${minimoCartonesInicio} cartones · faltan ${faltantes} para empezar`
+        : `✅ Mínimo alcanzado (${cartonesVendidosProgramacion}/${minimoCartonesInicio}) · el juego empieza en ${formatearCuentaRegresivaVentas(juegoProgramacionActual.proximo_juego_en)}`;
     } else {
       banner.textContent = '🟢 Ventas abiertas · el administrador anunciará el próximo juego';
     }
@@ -1607,6 +1610,8 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
         .select('numero_carton');
 
       cartonesOcupados = new Set((ocupados || []).map(c => Number(c.numero_carton)));
+      cartonesVendidosProgramacion = cartonesOcupados.size;
+      actualizarProgramacionVentas(juegoProgramacionActual);
 
       const cincoMinAtras = new Date(Date.now() - 5 * 60000).toISOString();
       const { data: apartados } = await supabaseClient
@@ -1978,6 +1983,8 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
             cartonesOcupados.add(Number(payload.new.numero_carton));
             cartonesApartados.delete(Number(payload.new.numero_carton));
             cartonesSeleccionados.delete(Number(payload.new.numero_carton));
+            cartonesVendidosProgramacion = cartonesOcupados.size;
+            actualizarProgramacionVentas(juegoProgramacionActual);
             actualizarVisualGrid();
             actualizarStats();
           }
@@ -1986,6 +1993,8 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
           { event: 'DELETE', schema: 'public', table: 'cartones_vendidos' },
           (payload) => {
             cartonesOcupados.delete(Number(payload.old.numero_carton));
+            cartonesVendidosProgramacion = cartonesOcupados.size;
+            actualizarProgramacionVentas(juegoProgramacionActual);
             actualizarVisualGrid();
             actualizarStats();
           }
