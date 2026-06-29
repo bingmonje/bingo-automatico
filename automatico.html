@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎱 Bingo Andino 75 - Tus Cartones</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --primary: #FFA500;
+      --secondary: #f9d949;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --dark: #1a1a2e;
+      --darker: #0f0f1a;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+      min-height: 100vh;
+      color: white;
+    }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+    .header {
+      text-align: center;
+      padding: 30px;
+      background: rgba(255,165,0,0.1);
+      border-radius: 20px;
+      margin-bottom: 30px;
+      border: 3px solid var(--primary);
+    }
+
+    .header h1 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary);
+      font-size: 2.5em;
+      text-shadow: 0 0 20px rgba(255,165,0,0.5);
+    }
+
+    .header p {
+      color: rgba(255,255,255,0.8);
+      margin-top: 10px;
+      font-size: 1.1em;
+    }
+
+    .estado-juego {
+      display: inline-block;
+      padding: 12px 30px;
+      border-radius: 30px;
+      font-weight: bold;
+      margin-top: 20px;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .estado-esperando { background: var(--secondary); color: #000; }
+    .estado-jugando { 
+      background: var(--success); 
+      animation: pulse 1.5s infinite;
+      box-shadow: 0 0 30px rgba(39, 174, 96, 0.5);
+    }
+    .estado-finalizado { background: var(--danger); }
+
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(39, 174, 96, 0.5); }
+      50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(39, 174, 96, 0.8); }
+    }
+
+    .info-jugador {
+      background: rgba(0,0,0,0.2);
+      padding: 20px;
+      border-radius: 15px;
+      margin-bottom: 30px;
+      display: flex;
+      justify-content: center;
+      gap: 40px;
+      flex-wrap: wrap;
+    }
+
+    .info-item { text-align: center; }
+    .info-item strong { display: block; color: var(--primary); margin-bottom: 5px; }
+
+    .bola-section {
+      text-align: center;
+      margin: 40px 0;
+    }
+
+    .bola-actual {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #ff6b6b, #c0392b);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 4.5em;
+      font-weight: 900;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 10px rgba(249,217,73,0.3);
+      border: 5px solid var(--secondary);
+      position: relative;
+      animation: ballEnter 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes ballEnter {
+      0% { transform: scale(0) rotate(-180deg); opacity: 0; }
+      60% { transform: scale(1.1) rotate(10deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .bola-letra {
+      position: absolute;
+      top: -15px;
+      font-size: 0.4em;
+      background: var(--secondary);
+      color: #000;
+      padding: 8px 25px;
+      border-radius: 25px;
+      font-weight: bold;
+    }
+
+    .historial-section {
+      background: rgba(0,0,0,0.3);
+      border-radius: 20px;
+      padding: 25px;
+      margin: 30px 0;
+    }
+
+    .historial-section h3 {
+      color: var(--secondary);
+      margin-bottom: 20px;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .bolas-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      justify-content: center;
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 15px;
+    }
+
+    .bola-historial {
+      width: 55px;
+      height: 55px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 1.1em;
+      animation: popIn 0.3s ease;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+
+    @keyframes popIn {
+      from { transform: scale(0); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+
+    .bola-B { background: linear-gradient(135deg, #3498db, #2980b9); }
+    .bola-I { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+    .bola-N { background: linear-gradient(135deg, #f39c12, #d68910); }
+    .bola-G { background: linear-gradient(135deg, #27ae60, #1e8449); }
+    .bola-O { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+
+    .cartones-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 30px;
+      margin-top: 30px;
+    }
+
+    .carton-section {
+      background: rgba(255,255,255,0.03);
+      border-radius: 25px;
+      padding: 30px;
+      border: 3px solid var(--primary);
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .carton-section.ganador {
+      border-color: var(--success);
+      box-shadow: 0 0 50px rgba(39, 174, 96, 0.5);
+      animation: ganadorPulse 2s infinite;
+    }
+
+    .carton-section.cerca {
+      border-color: var(--warning);
+      box-shadow: 0 0 30px rgba(243, 156, 18, 0.3);
+    }
+
+    @keyframes ganadorPulse {
+      0%, 100% { box-shadow: 0 0 30px rgba(39, 174, 96, 0.5); }
+      50% { box-shadow: 0 0 60px rgba(39, 174, 96, 0.9); }
+    }
+
+    .carton-header {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .carton-header h2 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--secondary);
+      font-size: 1.5em;
+    }
+
+    .carton-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      background: #2c3e50;
+      padding: 20px;
+      border-radius: 15px;
+    }
+
+    .header-cell {
+      text-align: center;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5em;
+      font-weight: bold;
+      color: var(--primary);
+      padding: 12px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 10px;
+    }
+
+    .numero-cell {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4em;
+      font-weight: bold;
+      background: #ecf0f1;
+      color: #2c3e50;
+      border-radius: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .numero-cell.marcado {
+      background: linear-gradient(135deg, var(--success), #2ecc71);
+      color: white;
+      animation: markCell 0.5s ease;
+      box-shadow: 0 0 15px rgba(39, 174, 96, 0.5);
+    }
+
+    @keyframes markCell {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.15); }
+      100% { transform: scale(1); }
+    }
+
+    .numero-cell.libre {
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      color: white;
+      font-size: 0.85em;
+    }
+
+    .progreso-barra {
+      width: 100%;
+      height: 25px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 15px 0;
+    }
+
+    .progreso-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--danger), var(--warning), var(--success));
+      transition: width 0.8s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      font-size: 0.9em;
+    }
+
+    .estado-carton {
+      text-align: center;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    .estado-faltan { color: var(--secondary); }
+    .estado-cerca { color: var(--warning); }
+    .estado-lleno { color: var(--success); font-size: 1.2em; }
+
+    .modal-ganador {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.95);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    .modal-ganador.activo {
+      display: flex;
+      animation: fadeIn 0.5s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .ganador-content {
+      text-align: center;
+      padding: 50px;
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      border-radius: 40px;
+      animation: ganadorZoom 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      max-width: 600px;
+      width: 90%;
+    }
+
+    @keyframes ganadorZoom {
+      0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+      60% { transform: scale(1.1) rotate(5deg); }
+      100% { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    .ganador-content h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 3.5em;
+      color: #000;
+      margin-bottom: 20px;
+    }
+
+    .confeti {
+      position: fixed;
+      width: 12px;
+      height: 12px;
+      top: -20px;
+      pointer-events: none;
+      z-index: 10001;
+    }
+
+    .error-banner {
+      background: var(--danger);
+      color: white;
+      padding: 20px;
+      text-align: center;
+      border-radius: 10px;
+      margin: 20px 0;
+      display: none;
+    }
+
+    .error-banner.active { display: block; }
+
+    .no-cartones {
+      text-align: center;
+      padding: 60px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 20px;
+      margin: 40px 0;
+    }
+
+    .no-cartones h2 {
+      color: var(--warning);
+      margin-bottom: 20px;
+    }
+
+
+    .login-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-card {
+      width: 100%;
+      max-width: 520px;
+      background: rgba(255,255,255,0.05);
+      border: 2px solid var(--primary);
+      border-radius: 25px;
+      padding: 40px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    }
+
+    .login-card h2 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+
+    .login-card p {
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+
+    .login-card input {
+      width: 100%;
+      padding: 16px 18px;
+      border-radius: 12px;
+      border: 2px solid rgba(255,165,0,0.3);
+      background: rgba(0,0,0,0.25);
+      color: white;
+      font-size: 1.1em;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    .login-card input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(255,165,0,0.2);
+    }
+
+    .btn-login-cedula {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      padding: 16px 20px;
+      font-size: 1.1em;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      margin-bottom: 15px;
+    }
+
+    .login-help {
+      font-size: 0.95em;
+      color: rgba(255,255,255,0.6);
+    }
+
+    .login-help a {
+      color: var(--secondary);
+      text-decoration: none;
+    }
+
+    .ingreso-mensaje {
+      min-height: 24px;
+      font-weight: 500;
+      margin-top: 8px;
+    }
+
+    .ingreso-warning { color: var(--warning); }
+    .ingreso-danger { color: var(--danger); }
+    .ingreso-success { color: var(--success); }
+
+
+    .cartones-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+      margin: 20px 0 10px;
+      padding: 18px 22px;
+      background: rgba(0,0,0,0.25);
+      border-radius: 18px;
+    }
+
+    .cartones-toolbar-info {
+      color: rgba(255,255,255,0.8);
+      font-size: 0.98em;
+    }
+
+    .vista-toggle {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-vista {
+      border: 1px solid rgba(255,165,0,0.35);
+      background: rgba(255,255,255,0.06);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn-vista.active {
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      color: #000;
+      border-color: transparent;
+    }
+
+    .carton-meta {
+      margin-top: 8px;
+      text-align: center;
+      color: rgba(255,255,255,0.68);
+      font-size: 0.9em;
+      line-height: 1.35;
+    }
+
+    .paginacion-cartones {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    .btn-pagina {
+      border: 1px solid rgba(255,165,0,0.35);
+      background: rgba(255,255,255,0.06);
+      color: white;
+      padding: 10px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .btn-pagina:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .page-chip {
+      min-width: 42px;
+      height: 42px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,165,0,0.35);
+      background: rgba(255,255,255,0.06);
+      color: white;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .page-chip.active {
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      color: #000;
+      border-color: transparent;
+    }
+
+
+    .premios-box {
+      background: rgba(0,0,0,0.28);
+      border: 2px solid rgba(255,165,0,0.3);
+      border-radius: 22px;
+      padding: 24px;
+      margin: 25px 0 30px;
+    }
+
+    .premios-box h3 {
+      color: var(--secondary);
+      font-family: 'Orbitron', sans-serif;
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .premios-topline {
+      text-align: center;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 18px;
+      font-size: 0.98em;
+    }
+
+    .premios-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .premio-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,165,0,0.18);
+      border-radius: 18px;
+      padding: 18px;
+      text-align: center;
+    }
+
+    .premio-label {
+      color: rgba(255,255,255,0.62);
+      font-size: 0.85em;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+      letter-spacing: 0.8px;
+    }
+
+    .premio-value {
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.45em;
+      line-height: 1.2;
+    }
+
+    .premios-distribucion {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .premio-subcard {
+      background: rgba(255,165,0,0.08);
+      border-radius: 16px;
+      padding: 16px 18px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .premio-subcard strong {
+      display: block;
+      color: var(--secondary);
+      margin-bottom: 6px;
+      font-size: 1.02em;
+    }
+
+    .premio-subcard span {
+      display: block;
+      color: rgba(255,255,255,0.9);
+      font-size: 1.12em;
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      .header h1 { font-size: 1.8em; }
+      .bola-actual { width: 120px; height: 120px; font-size: 3em; }
+      .cartones-container { grid-template-columns: 1fr; }
+      .carton-grid { gap: 6px; padding: 12px; }
+      .numero-cell { font-size: 1em; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="loginCedula" class="login-screen">
+    <div class="login-card">
+      <h2>🎱 Entrar al juego</h2>
+      <p>Ingresa tu cédula para cargar tus cartones aprobados.</p>
+      <input type="text" id="inputCedula" placeholder="Ej: V-12345678">
+      <button class="btn-login-cedula" onclick="entrarJuego()">ENTRAR A LA SALA</button>
+      <div id="mensajeIngreso" class="ingreso-mensaje"></div>
+      <div class="login-help">
+        ¿Aún no tienes cartones? <a href="comprar-cartones.html">Comprar cartones</a>
+      </div>
+    </div>
+  </div>
+
+  <div id="juegoApp" style="display:none;">
+  <div class="container">
+    
+    <div class="header">
+      <h1>🎱 BINGO ANDINO 75</h1>
+      <p id="subtitulo">Tus cartones en juego</p>
+      <div id="estadoJuego" class="estado-juego estado-esperando">
+        ⏳ ESPERANDO INICIO...
+      </div>
+    </div>
+
+    <div id="errorBanner" class="error-banner">
+      ❌ Error de conexión. Reconectando...
+    </div>
+
+    <div class="info-jugador">
+      <div class="info-item">
+        <strong>JUGADOR</strong>
+        <span id="infoNombre">--</span>
+      </div>
+      <div class="info-item">
+        <strong>CÉDULA</strong>
+        <span id="infoCedula">--</span>
+      </div>
+      <div class="info-item">
+        <strong>TUS CARTONES</strong>
+        <span id="infoCartones" style="color: var(--primary); font-weight: bold;">--</span>
+      </div>
+    </div>
+
+    <div class="premios-box">
+      <h3>💰 Información en tiempo real del premio</h3>
+      <div class="premios-topline" id="premiosTopline">Cartones aprobados en juego: 0</div>
+      <div class="premios-grid">
+        
+        <div class="premio-card">
+          <div class="premio-label">Dinero a repartir </div>
+          <div class="premio-value" id="premioPool">0.00 Bs</div>
+        </div>
+       
+      </div>
+      <div class="premios-distribucion">
+        <div class="premio-subcard">
+          <strong>🏆 Premio cartón lleno </strong>
+          <span id="premioLleno">0.00 Bs</span>
+        </div>
+        <div class="premio-subcard">
+          <strong>➡️ Premio por fila </strong>
+          <span id="premioFila">0.00 Bs</span>
+        </div>
+        <div class="premio-subcard">
+          <strong>⬇️ Premio por columna </strong>
+          <span id="premioColumna">0.00 Bs</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="bola-section">
+      <div id="bolaActual" class="bola-actual" style="display: none;">
+        <span class="bola-letra" id="letraActual">B</span>
+        <span id="numeroActual">--</span>
+      </div>
+      <div id="esperandoMensaje" style="padding: 40px; font-size: 1.2em; opacity: 0.7;">
+        Esperando que el administrador inicie el juego...
+      </div>
+    </div>
+
+    <div class="historial-section">
+      <h3>📋 BOLAS CANTADAS (Últimas 30)</h3>
+      <div id="historialBolas" class="bolas-grid">
+        <p style="color: rgba(255,255,255,0.4); width: 100%; text-align: center;">
+          Las bolas aparecerán aquí cuando inicie el juego
+        </p>
+      </div>
+    </div>
+
+    <div class="cartones-toolbar">
+      <div class="vista-toggle">
+        <button id="btnVistaMios" class="btn-vista active" onclick="cambiarModoVista('mios')">👤 Mis cartones</button>
+        <button id="btnVistaTodos" class="btn-vista" onclick="cambiarModoVista('todos')">🌍 Otros cartones aprobados</button>
+      </div>
+      <div class="cartones-toolbar-info" id="cartonesToolbarInfo">
+        Mostrando cartones 1 al 10
+      </div>
+      <div class="paginacion-cartones" id="paginacionCartones"></div>
+    </div>
+
+    <div id="cartonesContainer" class="cartones-container">
+      <!-- Cartones se generan dinámicamente -->
+    </div>
+
+  </div>
+
+  <div id="modalGanador" class="modal-ganador">
+    <div class="ganador-content">
+      <h1>🎉 ¡BINGO! 🎉</h1>
+      <h2 id="ganadorTexto" style="color: #000; margin-bottom: 20px;"></h2>
+      <p style="color: #000; font-size: 1.2em; margin-bottom: 30px;">
+        ¡Cartón completo! Has ganado el premio.
+      </p>
+      <button id="modalCloseBtn" onclick="cerrarModal()" style="background: #000; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 1.1em; cursor: pointer;">
+        ACEPTAR
+      </button>
+    </div>
+  </div>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let cartonesComprados = [];
+    let numerosMarcadosPorCarton = {};
+    let bolasCantadas = [];
+    let suscripciones = [];
+    let datosJugador = {};
+    let isDeclarandoGanador = false;
+    let gameId = null;
+    let pendingBalls = [];
+    let bolasProcesadas = new Set();
+    let paginaActualCartones = 1;
+    const CARTONES_POR_PAGINA = 10;
+    let modoVistaCartones = 'mios';
+    let cartonesEnSala = [];
+    let resumenPremios = { recaudado: 0, pool: 0, admin: 0, lleno: 0, fila: 0, columna: 0, cartones: 0, jugadores: 0 };
+    let premioTemporalActivo = false;
+    let premiosMostrados = { fila: null, columna: null, lleno: null };
+    let reinicioProgramado = false;
+let temporizadorReinicio = null;
+    let rotacionCartones = 0;
+    let refrescoCartonesTimer = null;
+    let refrescoPremiosTimer = null;
+
+    const RANGOS = {
+      B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75]
+    };
+
+    async function cargarRotacionCartones() {
+  const { data, error } = await supabaseClient
+    .from('configuracion')
+    .select('valor')
+    .eq('clave', 'rotacion_cartones')
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error cargando rotación de cartones:', error);
+    rotacionCartones = 0;
+    return;
+  }
+
+  const valor = parseInt(data?.valor ?? '0', 10);
+  rotacionCartones = Number.isInteger(valor) && valor >= 0 ? valor : 0;
+}
+    function generarVariantesCedula(valor) {
+      const limpio = (valor || '').trim().toUpperCase().replace(/\s+/g, '');
+      const digitos = limpio.replace(/\D/g, '');
+      const variantes = new Set();
+
+      if (limpio) variantes.add(limpio);
+      if (digitos) {
+        variantes.add(digitos);
+        variantes.add(`V-${digitos}`);
+        variantes.add(`V${digitos}`);
+        variantes.add(`E-${digitos}`);
+        variantes.add(`E${digitos}`);
+      }
+
+      return Array.from(variantes);
+    }
+
+    function mostrarEstadoIngreso(mensaje = '', tipo = '') {
+      const el = document.getElementById('mensajeIngreso');
+      el.className = 'ingreso-mensaje';
+      if (tipo) el.classList.add(`ingreso-${tipo}`);
+      el.textContent = mensaje;
+    }
+
+    function normalizarCedula(valor) {
+      const limpio = (valor || '').trim().toUpperCase().replace(/\s+/g, '');
+      if (!limpio) return '';
+      const prefijo = /^[VEJPGR]-?/i.test(limpio) ? limpio[0].toUpperCase() : '';
+      const digitos = limpio.replace(/\D/g, '');
+      if (!digitos) return limpio;
+      return prefijo ? `${prefijo}-${digitos}` : digitos;
+    }
+
+    function esCedulaDelJugador(cedula) {
+      const base = normalizarCedula(datosJugador.cedula || '');
+      const actual = normalizarCedula(cedula || '');
+      if (!base || !actual) return false;
+      if (base === actual) return true;
+      return base.replace(/\D/g, '') === actual.replace(/\D/g, '');
+    }
+
+    function asegurarTrackingCarton(numeroCarton) {
+      if (!numerosMarcadosPorCarton[numeroCarton]) {
+        numerosMarcadosPorCarton[numeroCarton] = new Set(['LIBRE']);
+      }
+      return numerosMarcadosPorCarton[numeroCarton];
+    }
+
+    function obtenerCartonesVisibles() {
+      if (modoVistaCartones === 'todos') {
+        return cartonesEnSala.filter(item => !esCedulaDelJugador(item.cedula));
+      }
+      return cartonesComprados.map(numero => ({
+        numero_carton: numero,
+        nombre: datosJugador.nombre || 'Jugador',
+        cedula: datosJugador.cedula || ''
+      }));
+    }
+
+    function obtenerUniversoCartones() {
+      // Cada pestaña procesa solo los cartones de su jugador. La RPC valida
+      // y calcula todos los ganadores en Postgres antes de acreditar premios.
+      return [...cartonesComprados];
+    }
+
+    function formatearBs(valor) {
+      return `${Number(valor || 0).toFixed(2)} Bs`;
+    }
+
+    function actualizarResumenPremiosUI() {
+      document.getElementById('premiosTopline').textContent = `Cartones aprobados en juego: ${resumenPremios.cartones || 0}`;
+      
+      document.getElementById('premioPool').textContent = formatearBs(resumenPremios.pool);
+      
+      document.getElementById('premioLleno').textContent = formatearBs(resumenPremios.lleno);
+      document.getElementById('premioFila').textContent = formatearBs(resumenPremios.fila);
+      document.getElementById('premioColumna').textContent = formatearBs(resumenPremios.columna);
+    }
+
+    async function cargarResumenPremios() {
+      const { data, error } = await supabaseClient.rpc('bingo_resumen_sala');
+
+      if (error) {
+        console.error('❌ Error cargando resumen de premios:', error);
+        return;
+      }
+
+      resumenPremios = {
+        recaudado: Number(data?.recaudado || 0),
+        pool: Number(data?.pool || 0),
+        admin: Number(data?.admin || 0),
+        lleno: Number(data?.lleno || 0),
+        fila: Number(data?.fila || 0),
+        columna: Number(data?.columna || 0),
+        cartones: Number(data?.cartones || 0),
+        jugadores: Number(data?.jugadores || 0)
+      };
+
+      actualizarResumenPremiosUI();
+    }
+
+    async function cargarCartonesEnSala() {
+      const { data, error } = await supabaseClient
+        .from('cartones_vendidos')
+        .select('numero_carton, nombre, cedula, telefono')
+        .order('numero_carton', { ascending: true });
+
+      if (error) {
+        console.error('❌ Error cargando cartones en sala:', error);
+        return;
+      }
+
+      cartonesEnSala = (data || []).map(item => ({
+        numero_carton: Number(item.numero_carton),
+        nombre: item.nombre || 'Jugador',
+        cedula: item.cedula || '',
+        telefono: item.telefono || ''
+      }));
+
+      cartonesEnSala.forEach(item => asegurarTrackingCarton(item.numero_carton));
+      actualizarResumenPremiosUI();
+    }
+
+    async function cambiarModoVista(modo) {
+      if (modo !== 'mios' && modo !== 'todos') return;
+      if (modo === modoVistaCartones) return;
+
+      if (modo === 'todos') {
+        await cargarCartonesEnSala();
+      }
+
+      modoVistaCartones = modo;
+      paginaActualCartones = 1;
+
+      document.getElementById('btnVistaMios').classList.toggle('active', modo === 'mios');
+      document.getElementById('btnVistaTodos').classList.toggle('active', modo === 'todos');
+
+      renderizarPaginaCartones();
+    }
+
+   async function init() {
+  await cargarRotacionCartones();
+
+  const usuario = requerirSesion();
+  if (!usuario) return;
+
+  document.getElementById('inputCedula').value = usuario.cedula || '';
+  await entrarJuego();
+}
+
+    async function entrarJuego() {
+      try {
+        const cedulaInput = document.getElementById('inputCedula').value.trim();
+        if (!cedulaInput) {
+          mostrarEstadoIngreso('Ingresa tu cédula para continuar.', 'warning');
+          return;
+        }
+
+        mostrarEstadoIngreso('Buscando tus cartones aprobados...', 'success');
+
+        const variantes = generarVariantesCedula(cedulaInput);
+
+        const { data, error } = await supabaseClient
+          .from('cartones_vendidos')
+          .select('numero_carton, nombre, cedula')
+          .in('cedula', variantes)
+          .order('numero_carton', { ascending: true });
+
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+          const { data: pendientes } = await supabaseClient
+            .from('apartados_temp')
+            .select('estado')
+            .in('cedula', variantes)
+            .in('estado', ['apartado', 'pendiente'])
+            .order('id', { ascending: false });
+
+          if (pendientes && pendientes.length > 0) {
+            mostrarEstadoIngreso('Tu compra todavía está pendiente de aprobación.', 'warning');
+          } else {
+            mostrarEstadoIngreso('No encontramos cartones aprobados con esa cédula.', 'danger');
+          }
+          return;
+        }
+
+        datosJugador = {
+          cedula: data[0].cedula || cedulaInput,
+          nombre: data[0].nombre || sessionStorage.getItem('nombreComprador') || 'Jugador'
+        };
+
+        cartonesComprados = [...new Set(data.map(item => Number(item.numero_carton)))].sort((a, b) => a - b);
+        numerosMarcadosPorCarton = {};
+        cartonesComprados.forEach(num => {
+          numerosMarcadosPorCarton[num] = new Set(['LIBRE']);
+        });
+
+        cartonesEnSala = cartonesComprados.map(numero => ({
+          numero_carton: numero,
+          nombre: datosJugador.nombre,
+          cedula: datosJugador.cedula,
+          telefono: datosJugador.telefono || ''
+        }));
+        await cargarResumenPremios();
+
+        sessionStorage.setItem('modoJuego', 'solo-comprados');
+        sessionStorage.setItem('cedulaComprador', datosJugador.cedula);
+        sessionStorage.setItem('nombreComprador', datosJugador.nombre);
+        sessionStorage.setItem('cartonesComprados', JSON.stringify(cartonesComprados));
+
+        abrirJuego();
+      } catch (error) {
+        console.error('❌ Error entrando al juego:', error);
+        mostrarEstadoIngreso('No se pudo validar la cédula. Intenta de nuevo.', 'danger');
+      }
+    }
+
+    function limpiarVistaJuego() {
+      bolasCantadas = [];
+      pendingBalls = [];
+      bolasProcesadas = new Set();
+      gameId = null;
+      isDeclarandoGanador = false;
+      premioTemporalActivo = false;
+      premiosMostrados = { fila: null, columna: null, lleno: null };
+
+      const historial = document.getElementById('historialBolas');
+      historial.innerHTML = `
+        <p style="color: rgba(255,255,255,0.4); width: 100%; text-align: center;">
+          Las bolas aparecerán aquí cuando inicie el juego
+        </p>
+      `;
+
+      document.getElementById('bolaActual').style.display = 'none';
+      document.getElementById('esperandoMensaje').style.display = 'block';
+      document.getElementById('esperandoMensaje').textContent = 'Esperando que el administrador inicie el juego...';
+      document.getElementById('estadoJuego').className = 'estado-juego estado-esperando';
+      document.getElementById('estadoJuego').textContent = '⏳ ESPERANDO INICIO...';
+      document.getElementById('errorBanner').classList.remove('active');
+      document.querySelectorAll('.mensaje-final-juego').forEach(el => el.remove());
+      actualizarResumenPremiosUI();
+    }
+
+    function abrirJuego() {
+      document.getElementById('loginCedula').style.display = 'none';
+      document.getElementById('juegoApp').style.display = 'block';
+      mostrarEstadoIngreso('');
+      limpiarVistaJuego();
+      mostrarPantallaJuego();
+      iniciarSuscripciones();
+      verificarEstadoActual();
+    }
+
+    function mostrarPantallaJuego() {
+      document.getElementById('infoNombre').textContent = datosJugador.nombre;
+      document.getElementById('infoCedula').textContent = datosJugador.cedula;
+      document.getElementById('infoCartones').textContent = `${cartonesComprados.length} cartón(es)`;
+      document.getElementById('subtitulo').textContent =
+        `Tienes ${cartonesComprados.length} cartón(es) en juego`;
+
+      actualizarResumenPremiosUI();
+      modoVistaCartones = 'mios';
+      document.getElementById('btnVistaMios').classList.add('active');
+      document.getElementById('btnVistaTodos').classList.remove('active');
+      paginaActualCartones = 1;
+      renderizarPaginaCartones();
+    }
+
+    function renderizarPaginaCartones() {
+      const container = document.getElementById('cartonesContainer');
+      const cartonesVisibles = obtenerCartonesVisibles();
+      const totalPaginas = Math.max(1, Math.ceil(cartonesVisibles.length / CARTONES_POR_PAGINA));
+      if (paginaActualCartones > totalPaginas) paginaActualCartones = totalPaginas;
+      if (paginaActualCartones < 1) paginaActualCartones = 1;
+
+      const inicio = (paginaActualCartones - 1) * CARTONES_POR_PAGINA;
+      const fin = inicio + CARTONES_POR_PAGINA;
+      const cartonesPagina = cartonesVisibles.slice(inicio, fin);
+
+      container.innerHTML = '';
+
+      if (cartonesPagina.length === 0) {
+        container.innerHTML = `
+          <div class="no-cartones">
+            <h2>🎫 No hay cartones para mostrar</h2>
+            <p>${modoVistaCartones === 'todos' ? 'Todavía no hay otros cartones aprobados en juego.' : 'No tienes cartones aprobados.'}</p>
+          </div>
+        `;
+        actualizarPaginacionCartones();
+        return;
+      }
+
+      cartonesPagina.forEach((item) => {
+        const numeroCarton = Number(item.numero_carton);
+        asegurarTrackingCarton(numeroCarton);
+        const carton = generarCartonDesdeNumero(numeroCarton);
+        const section = document.createElement('div');
+        section.className = 'carton-section';
+        section.id = `carton-${numeroCarton}`;
+
+        const esMio = modoVistaCartones === 'mios' || esCedulaDelJugador(item.cedula);
+
+        section.innerHTML = `
+          <div class="carton-header">
+            <h2>🎫 CARTÓN #${String(numeroCarton).padStart(4, '0')}</h2>
+            <small style="color: rgba(255,255,255,0.6);">${esMio ? 'Tu cartón personal' : 'Cartón aprobado en juego'}</small>
+            ${!esMio ? `<div class="carton-meta">${item.nombre || 'Jugador'}<br><span>${item.cedula || ''}</span></div>` : ''}
+          </div>
+          <div class="progreso-barra">
+            <div id="barra-${numeroCarton}" class="progreso-fill" style="width: 4%">1/24</div>
+          </div>
+          <div class="estado-carton estado-faltan" id="estado-${numeroCarton}">
+            Faltan 23 números para BINGO
+          </div>
+          <div id="grid-${numeroCarton}" class="carton-grid"></div>
+        `;
+
+        container.appendChild(section);
+        renderizarGrid(numeroCarton, carton);
+        hidratarCartonRenderizado(numeroCarton);
+      });
+
+      actualizarPaginacionCartones();
+    }
+
+    function hidratarCartonRenderizado(numeroCarton) {
+      const marcados = numerosMarcadosPorCarton[numeroCarton] || new Set(['LIBRE']);
+      marcados.forEach(valor => {
+        if (valor === 'LIBRE') return;
+        const celdas = document.querySelectorAll(`[data-carton="${numeroCarton}"][data-numero="${valor}"]`);
+        celdas.forEach(celda => celda.classList.add('marcado'));
+      });
+      actualizarProgreso(numeroCarton);
+    }
+
+    function actualizarPaginacionCartones() {
+      const info = document.getElementById('cartonesToolbarInfo');
+      const paginacion = document.getElementById('paginacionCartones');
+      const cartonesVisibles = obtenerCartonesVisibles();
+      const total = cartonesVisibles.length;
+      const totalPaginas = Math.max(1, Math.ceil(total / CARTONES_POR_PAGINA));
+      const inicio = total === 0 ? 0 : ((paginaActualCartones - 1) * CARTONES_POR_PAGINA) + 1;
+      const fin = Math.min(total, paginaActualCartones * CARTONES_POR_PAGINA);
+
+      info.textContent = total === 0
+        ? (modoVistaCartones === 'todos'
+            ? 'No hay otros cartones aprobados para mostrar'
+            : 'No tienes cartones aprobados en esta sala')
+        : (modoVistaCartones === 'todos'
+            ? `Mostrando otros cartones ${inicio} al ${fin} de ${total}`
+            : `Mostrando tus cartones ${inicio} al ${fin} de ${total}`);
+
+      let html = `
+        <button class="btn-pagina" onclick="cambiarPaginaCartones(${paginaActualCartones - 1})" ${paginaActualCartones === 1 ? 'disabled' : ''}>◀ Anterior</button>
+      `;
+
+      for (let pagina = 1; pagina <= totalPaginas; pagina++) {
+        html += `<button class="page-chip ${pagina === paginaActualCartones ? 'active' : ''}" onclick="cambiarPaginaCartones(${pagina})">${pagina}</button>`;
+      }
+
+      html += `
+        <button class="btn-pagina" onclick="cambiarPaginaCartones(${paginaActualCartones + 1})" ${paginaActualCartones === totalPaginas ? 'disabled' : ''}>Siguiente ▶</button>
+      `;
+
+      paginacion.innerHTML = html;
+    }
+
+    function cambiarPaginaCartones(pagina) {
+      const totalPaginas = Math.max(1, Math.ceil(obtenerCartonesVisibles().length / CARTONES_POR_PAGINA));
+      if (pagina < 1 || pagina > totalPaginas || pagina === paginaActualCartones) return;
+      paginaActualCartones = pagina;
+      renderizarPaginaCartones();
+      window.scrollTo({ top: document.getElementById('cartonesContainer').offsetTop - 80, behavior: 'smooth' });
+    }
+
+    function generarCartonDesdeNumero(numeroCarton) {
+       let seed = (Number(numeroCarton) * 12345) + (rotacionCartones * 99991);
+      const random = () => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+      };
+
+      const carton = {};
+      for (const letra in RANGOS) {
+        const [min, max] = RANGOS[letra];
+        const nums = new Set();
+        const cantidad = letra === 'N' ? 4 : 5;
+
+        while (nums.size < cantidad) {
+          const num = min + Math.floor(random() * (max - min + 1));
+          nums.add(num);
+        }
+
+        carton[letra] = Array.from(nums).sort((a, b) => a - b);
+      }
+
+      return carton;
+    }
+
+    function renderizarGrid(numeroCarton, carton) {
+      const grid = document.getElementById(`grid-${numeroCarton}`);
+      const letras = ['B', 'I', 'N', 'G', 'O'];
+
+      letras.forEach(l => {
+        const div = document.createElement('div');
+        div.className = 'header-cell';
+        div.textContent = l;
+        grid.appendChild(div);
+      });
+
+      for (let fila = 0; fila < 5; fila++) {
+        for (let col = 0; col < 5; col++) {
+          const letra = letras[col];
+          const celda = document.createElement('div');
+          celda.className = 'numero-cell';
+          celda.dataset.carton = numeroCarton;
+
+          if (letra === 'N' && fila === 2) {
+            celda.textContent = 'FREE';
+            celda.classList.add('libre', 'marcado');
+          } else {
+            const idx = (letra === 'N' && fila > 2) ? fila - 1 : fila;
+            const num = carton[letra][idx];
+            celda.textContent = num;
+            celda.dataset.numero = num;
+          }
+
+          grid.appendChild(celda);
+        }
+      }
+    }
+
+
+    function obtenerInfoCarton(numeroCarton) {
+      const numero = Number(numeroCarton);
+      const encontrado = cartonesEnSala.find(item => Number(item.numero_carton) === numero);
+
+      if (encontrado) {
+        return {
+          numero_carton: numero,
+          nombre: encontrado.nombre || 'Jugador',
+          cedula: encontrado.cedula || '',
+          telefono: encontrado.telefono || '',
+          esMio: esCedulaDelJugador(encontrado.cedula)
+        };
+      }
+
+      return {
+        numero_carton: numero,
+        nombre: datosJugador.nombre || 'Jugador',
+        cedula: datosJugador.cedula || '',
+        telefono: datosJugador.telefono || '',
+        esMio: cartonesComprados.includes(numero)
+      };
+    }
+
+    function obtenerMatrizCarton(numeroCarton) {
+      const carton = generarCartonDesdeNumero(numeroCarton);
+      const letras = ['B', 'I', 'N', 'G', 'O'];
+      const matriz = [];
+
+      for (let fila = 0; fila < 5; fila++) {
+        const row = [];
+        for (let col = 0; col < 5; col++) {
+          const letra = letras[col];
+
+          if (letra === 'N' && fila === 2) {
+            row.push('LIBRE');
+          } else {
+            const idx = (letra === 'N' && fila > 2) ? fila - 1 : fila;
+            row.push(carton[letra][idx]);
+          }
+        }
+        matriz.push(row);
+      }
+
+      return matriz;
+    }
+
+    function tieneFilaCompleta(numeroCarton) {
+      const matriz = obtenerMatrizCarton(numeroCarton);
+      const marcados = numerosMarcadosPorCarton[numeroCarton] || new Set(['LIBRE']);
+
+      for (let fila = 0; fila < 5; fila++) {
+        let completa = true;
+        for (let col = 0; col < 5; col++) {
+          const valor = matriz[fila][col];
+          if (valor !== 'LIBRE' && !marcados.has(valor)) {
+            completa = false;
+            break;
+          }
+        }
+        if (completa) return true;
+      }
+
+      return false;
+    }
+
+    function tieneColumnaCompleta(numeroCarton) {
+      const matriz = obtenerMatrizCarton(numeroCarton);
+      const marcados = numerosMarcadosPorCarton[numeroCarton] || new Set(['LIBRE']);
+
+      for (let col = 0; col < 5; col++) {
+        let completa = true;
+        for (let fila = 0; fila < 5; fila++) {
+          const valor = matriz[fila][col];
+          if (valor !== 'LIBRE' && !marcados.has(valor)) {
+            completa = false;
+            break;
+          }
+        }
+        if (completa) return true;
+      }
+
+      return false;
+    }
+
+   let colaPremios = [];
+
+async function mostrarPremioTemporal(titulo, subtitulo) {
+  colaPremios.push({ titulo, subtitulo });
+
+  if (premioTemporalActivo) return;
+
+  while (colaPremios.length > 0) {
+    premioTemporalActivo = true;
+
+    const { titulo, subtitulo } = colaPremios.shift();
+
+    const modal = document.getElementById('modalGanador');
+    const botonCerrar = document.getElementById('modalCloseBtn');
+
+    document.querySelector('#modalGanador h1').textContent = titulo;
+    document.getElementById('ganadorTexto').textContent = subtitulo;
+
+    if (botonCerrar) botonCerrar.style.display = 'none';
+
+    modal.classList.add('activo');
+
+    await new Promise(r => setTimeout(r, 4000));
+
+    modal.classList.remove('activo');
+  }
+
+  premioTemporalActivo = false;
+}
+
+    function requerirSesion() {
+  const usuario = JSON.parse(localStorage.getItem('usuario_bingo') || 'null');
+  return usuario;
+}
+    
+   async function verificarPremiosSecuenciales(numeroCarton) {
+  if (!gameId || premioTemporalActivo) return;
+
+  try {
+    const info = obtenerInfoCarton(numeroCarton);
+
+    const { data: juego, error } = await supabaseClient
+      .from('bingo_automatico')
+      .select('id, estado, ganador_id, premio_fila_pagado, premio_columna_pagado')
+      .eq('id', gameId)
+      .single();
+
+    if (error || !juego || juego.estado !== 'jugando' || juego.ganador_id) return;
+
+    const filaCompleta = tieneFilaCompleta(numeroCarton);
+    const columnaCompleta = tieneColumnaCompleta(numeroCarton);
+
+    if (!juego.premio_fila_pagado && filaCompleta) {
+      const repartoFila = await reclamarPremioEnServidor('fila', numeroCarton, info);
+
+      if (repartoFila?.ok && !repartoFila.duplicado) {
+        await mostrarPremioTemporal(
+          '🎉 ¡PREMIO POR FILA!',
+          repartoFila.totalGanadores > 1
+            ? `Se dividió entre ${repartoFila.totalGanadores} ganadores. ${repartoFila.montoPorGanador.toFixed(2)} Bs c/u`
+            : `${info.nombre} ganó con el cartón #${numeroCarton}`
+        );
+        return;
+      }
+    }
+
+    if (!juego.premio_columna_pagado && columnaCompleta) {
+      const repartoColumna = await reclamarPremioEnServidor('columna', numeroCarton, info);
+
+      if (repartoColumna?.ok && !repartoColumna.duplicado) {
+        await mostrarPremioTemporal(
+          '🎉 ¡PREMIO POR COLUMNA!',
+          repartoColumna.totalGanadores > 1
+            ? `Se dividió entre ${repartoColumna.totalGanadores} ganadores. ${repartoColumna.montoPorGanador.toFixed(2)} Bs c/u`
+            : `${info.nombre} ganó con el cartón #${numeroCarton}`
+        );
+        return;
+      }
+    }
+
+    if (juego.premio_fila_pagado && juego.premio_columna_pagado) {
+      await verificarCartonLleno(numeroCarton);
+    }
+  } catch (error) {
+    console.error('❌ Error verificando premios secuenciales:', error);
+  }
+}
+    async function mostrarPremiosPreviosSiCorresponde(juego, juegoAnterior = null) {
+      if (!juego) return;
+
+      const filaCambio = juego.premio_fila_ganador_id && premiosMostrados.fila !== juego.premio_fila_ganador_id;
+      if (filaCambio) {
+        premiosMostrados.fila = juego.premio_fila_ganador_id;
+        await mostrarPremioTemporal('🎉 ¡PREMIO POR FILA!', juego.premio_fila_ganador_nombre || `Cartón #${juego.premio_fila_ganador_id}`);
+      }
+
+      const columnaCambio = juego.premio_columna_ganador_id && premiosMostrados.columna !== juego.premio_columna_ganador_id;
+      if (columnaCambio) {
+        premiosMostrados.columna = juego.premio_columna_ganador_id;
+        await mostrarPremioTemporal('🎉 ¡PREMIO POR COLUMNA!', juego.premio_columna_ganador_nombre || `Cartón #${juego.premio_columna_ganador_id}`);
+      }
+    }
+
+
+    function programarRefrescoCartones() {
+      clearTimeout(refrescoCartonesTimer);
+      refrescoCartonesTimer = setTimeout(async () => {
+        refrescoCartonesTimer = null;
+        await cargarCartonesEnSala();
+        if (modoVistaCartones === 'todos') {
+          renderizarPaginaCartones();
+        }
+      }, 350);
+    }
+
+    function programarRefrescoPremios() {
+      clearTimeout(refrescoPremiosTimer);
+      refrescoPremiosTimer = setTimeout(async () => {
+        refrescoPremiosTimer = null;
+        await cargarResumenPremios();
+      }, 350);
+    }
+
+    function iniciarSuscripciones() {
+      suscripciones.forEach(s => {
+        try { s.unsubscribe(); } catch (_) {}
+      });
+      suscripciones = [];
+
+      const salaSub = supabaseClient
+        .channel('bingo-sala-' + Date.now() + '-' + Math.random().toString(36).slice(2))
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'bingo_automatico' },
+          (payload) => {
+            manejarCambioJuego(payload.new, payload.old || null);
+          }
+        )
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'bolas_auto' },
+          (payload) => {
+            recibirBola(payload.new);
+          }
+        )
+        .subscribe();
+
+      suscripciones.push(salaSub);
+    }
+
+   async function verificarEstadoActual() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('bingo_automatico')
+      .select('*')
+      .order('id', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) return;
+
+    await cargarResumenPremios();
+
+    gameId = data.id;
+
+    if (data.estado === 'finalizado') {
+      document.getElementById('estadoJuego').className = 'estado-juego estado-esperando';
+      document.getElementById('estadoJuego').textContent = '⏳ ESPERANDO NUEVO JUEGO...';
+      document.getElementById('bolaActual').style.display = 'none';
+      document.getElementById('esperandoMensaje').style.display = 'block';
+      document.getElementById('esperandoMensaje').textContent =
+        'Esperando que el administrador inicie un nuevo juego...';
+      return;
+    }
+
+    await manejarCambioJuego(data, null);
+
+    if (data.estado === 'jugando') {
+      await cargarBolasAnteriores(data.id);
+       renderizarPaginaCartones();
+    }
+  } catch (error) {
+    console.error('❌ Error verificando estado:', error);
+  }
+}
+    async function cargarBolasAnteriores(juegoId) {
+      try {
+        const { data: bolas, error } = await supabaseClient
+          .from('bolas_auto')
+          .select('*')
+          .eq('juego_id', juegoId)
+          .order('sacada_en', { ascending: true });
+
+        if (error) throw error;
+
+        (bolas || []).forEach(bola => {
+          const key = `${bola.juego_id}-${bola.numero}`;
+          if (bolasProcesadas.has(key)) return;
+          bolasProcesadas.add(key);
+          agregarAlHistorial(bola.numero, bola.letra || obtenerLetra(bola.numero));
+          marcarNumeroSilencioso(bola.numero);
+          bolasCantadas.push(bola.numero);
+        });
+
+        if (bolas && bolas.length > 0) {
+          const ultima = bolas[bolas.length - 1];
+          mostrarBolaActual(ultima.numero, ultima.letra || obtenerLetra(ultima.numero));
+        }
+      } catch (error) {
+        console.error('❌ Error cargando bolas:', error);
+      }
+    }
+
+    async function manejarCambioJuego(juego, juegoAnterior = null) {
+      if (!juego) return;
+
+      const estadoEl = document.getElementById('estadoJuego');
+      const bolaDiv = document.getElementById('bolaActual');
+      const esperando = document.getElementById('esperandoMensaje');
+
+      gameId = juego.id;
+      await mostrarPremiosPreviosSiCorresponde(juego, juegoAnterior);
+
+      switch (juego.estado) {
+        case 'esperando':
+          estadoEl.className = 'estado-juego estado-esperando';
+          estadoEl.textContent = '⏳ ESPERANDO INICIO...';
+          bolaDiv.style.display = 'none';
+          esperando.style.display = 'block';
+          esperando.textContent = 'Esperando que el administrador inicie el juego...';
+          break;
+
+        case 'jugando':
+          estadoEl.className = 'estado-juego estado-jugando';
+          estadoEl.textContent = '🎱 JUGANDO - ¡Atento a tus cartones!';
+          bolaDiv.style.display = 'inline-flex';
+          esperando.style.display = 'none';
+          procesarBolasPendientes();
+          break;
+
+        case 'finalizado':
+          estadoEl.className = 'estado-juego estado-finalizado';
+          estadoEl.textContent = '🔴 JUEGO FINALIZADO';
+          if (juego.ganador_id) {
+           mostrarGanadorFinal(juego.ganador_id, juego.ganador_nombre, false);
+          }
+          break;
+      }
+    }
+
+    function recibirBola(bola) {
+      if (!gameId) {
+        pendingBalls.push(bola);
+        return;
+      }
+
+      if (bola.juego_id !== gameId) return;
+      procesarBola(bola);
+    }
+
+    function procesarBolasPendientes() {
+      pendingBalls.forEach(bola => {
+        if (bola.juego_id === gameId) procesarBola(bola);
+      });
+      pendingBalls = [];
+    }
+
+    function procesarBola(bola) {
+      const key = `${bola.juego_id}-${bola.numero}`;
+      if (bolasProcesadas.has(key)) return;
+      bolasProcesadas.add(key);
+
+      const letra = bola.letra || obtenerLetra(bola.numero);
+      mostrarBolaActual(bola.numero, letra);
+      agregarAlHistorial(bola.numero, letra);
+      bolasCantadas.push(bola.numero);
+
+      obtenerUniversoCartones().forEach(numCarton => {
+        marcarNumeroEnCarton(numCarton, bola.numero);
+      });
+    }
+
+    function mostrarBolaActual(numero, letra) {
+      const bolaDiv = document.getElementById('bolaActual');
+      document.getElementById('letraActual').textContent = letra;
+      document.getElementById('numeroActual').textContent = numero;
+
+      bolaDiv.style.display = 'inline-flex';
+      bolaDiv.style.animation = 'none';
+      setTimeout(() => bolaDiv.style.animation = 'ballEnter 0.6s ease', 10);
+    }
+
+    function obtenerLetra(num) {
+      if (num <= 15) return 'B';
+      if (num <= 30) return 'I';
+      if (num <= 45) return 'N';
+      if (num <= 60) return 'G';
+      return 'O';
+    }
+
+   function numeroExisteEnCarton(numeroCarton, numero) {
+  const matriz = obtenerMatrizCarton(numeroCarton);
+  for (const fila of matriz) {
+    for (const valor of fila) {
+      if (valor === numero) return true;
+    }
+  }
+  return false;
+}
+
+function marcarNumeroEnCarton(numeroCarton, numero) {
+  asegurarTrackingCarton(numeroCarton);
+
+  // Validar contra el cartón real, no contra lo visible en pantalla
+  if (!numeroExisteEnCarton(numeroCarton, numero)) return;
+
+  const yaMarcado = numerosMarcadosPorCarton[numeroCarton].has(numero);
+
+  if (!yaMarcado) {
+    numerosMarcadosPorCarton[numeroCarton].add(numero);
+  }
+
+  // Si está visible, lo pinta
+  const celdas = document.querySelectorAll(
+    `[data-carton="${numeroCarton}"][data-numero="${numero}"]`
+  );
+
+  celdas.forEach(celda => {
+    if (!celda.classList.contains('marcado')) {
+      celda.classList.add('marcado');
+      celda.style.animation = 'none';
+      setTimeout(() => celda.style.animation = 'markCell 0.5s ease', 10);
+    }
+  });
+
+  if (!yaMarcado) {
+    actualizarProgreso(numeroCarton);
+    verificarPremiosSecuenciales(numeroCarton);
+  }
+}
+
+    function marcarNumeroSilencioso(numero) {
+  obtenerUniversoCartones().forEach(numCarton => {
+    asegurarTrackingCarton(numCarton);
+
+    if (!numeroExisteEnCarton(numCarton, numero)) return;
+
+    numerosMarcadosPorCarton[numCarton].add(numero);
+
+    const celdas = document.querySelectorAll(
+      `[data-carton="${numCarton}"][data-numero="${numero}"]`
+    );
+
+    celdas.forEach(celda => {
+      if (!celda.classList.contains('marcado')) {
+        celda.classList.add('marcado');
+      }
+    });
+
+    actualizarProgreso(numCarton);
+  });
+}
+
+    function actualizarProgreso(numeroCarton) {
+      const marcados = numerosMarcadosPorCarton[numeroCarton].size - 1;
+      const total = 24;
+      const porcentaje = Math.max(4, Math.round((marcados / total) * 100));
+      const faltan = total - marcados;
+
+      const barra = document.getElementById(`barra-${numeroCarton}`);
+      const estado = document.getElementById(`estado-${numeroCarton}`);
+      const cartonSection = document.getElementById(`carton-${numeroCarton}`);
+
+      if (!barra || !estado || !cartonSection) return;
+
+      barra.style.width = porcentaje + '%';
+      barra.textContent = `${marcados}/${total}`;
+
+      if (faltan === 0) {
+        estado.textContent = '🎉 ¡CARTÓN LLENO! 🎉';
+        estado.className = 'estado-carton estado-lleno';
+        cartonSection.classList.add('ganador');
+      } else if (faltan <= 3) {
+        estado.textContent = `🔥 ¡Faltan solo ${faltan}! ¡Cerca de BINGO!`;
+        estado.className = 'estado-carton estado-cerca';
+        cartonSection.classList.add('cerca');
+      } else {
+        estado.textContent = `Faltan ${faltan} números para BINGO`;
+        estado.className = 'estado-carton estado-faltan';
+        cartonSection.classList.remove('cerca');
+      }
+    }
+
+    async function verificarCartonLleno(numeroCarton) {
+      if (isDeclarandoGanador) return;
+
+      const marcados = numerosMarcadosPorCarton[numeroCarton].size - 1;
+      if (marcados !== 24) return;
+
+      isDeclarandoGanador = true;
+
+      try {
+const info = obtenerInfoCarton(numeroCarton);
+        const repartoFinal = await reclamarPremioEnServidor('final', numeroCarton, info);
+
+        if (repartoFinal?.ok && !repartoFinal.duplicado) {
+          colaPremios = [];
+  premioTemporalActivo = false;
+  mostrarGanador(numeroCarton);
+
+  if (temporizadorReinicio) clearTimeout(temporizadorReinicio);
+  temporizadorReinicio = setTimeout(async () => {
+    await reiniciarDespuesDelJuego();
+  }, 8000);
+}
+      } catch (error) {
+        console.error('❌ Error declarando ganador:', error);
+      } finally {
+        isDeclarandoGanador = false;
+      }
+    }
+
+    function mostrarGanador(numeroCarton) {
+      const modal = document.getElementById('modalGanador');
+      const botonCerrar = document.getElementById('modalCloseBtn');
+      premiosMostrados.lleno = Number(numeroCarton);
+      document.querySelector('#modalGanador h1').textContent = '🎉 ¡BINGO! 🎉';
+      document.getElementById('ganadorTexto').textContent = `¡Cartón #${numeroCarton} completo!`;
+      if (botonCerrar) botonCerrar.style.display = 'inline-block';
+      modal.classList.add('activo');
+      crearConfeti();
+    }
+
+    function mostrarGanadorFinal(ganadorId, ganadorNombre, programarReinicio = true) {
+  const ganadorNum = parseInt(ganadorId, 10);
+  const previo = document.getElementById('resultadoFinalMsg');
+  if (previo) previo.remove();
+
+  if (cartonesComprados.includes(ganadorNum)) {
+    mostrarGanador(ganadorNum);
+    return;
+  }
+
+  const estadoEl = document.getElementById('estadoJuego');
+  estadoEl.textContent = `🏆 Ganó: ${ganadorNombre || 'Cartón #' + ganadorId}`;
+
+  const mensaje = document.createElement('div');
+  mensaje.id = 'resultadoFinalMsg';
+  mensaje.className = 'mensaje-final-juego';
+  mensaje.style.cssText = 'text-align: center; padding: 20px; background: rgba(231, 76, 60, 0.2); border-radius: 15px; margin: 20px 0; color: var(--danger);';
+  mensaje.innerHTML = `<h3>🏆 Juego terminado</h3><p>Ganador: ${ganadorNombre || 'Cartón #' + ganadorId}</p>`;
+  document.querySelector('.container').insertBefore(mensaje, document.getElementById('cartonesContainer'));
+}
+
+    function agregarAlHistorial(numero, letra) {
+      const container = document.getElementById('historialBolas');
+
+      if (container.querySelector('p')) {
+        container.innerHTML = '';
+      }
+
+      const div = document.createElement('div');
+      div.className = `bola-historial bola-${letra}`;
+      div.textContent = numero;
+      container.prepend(div);
+
+      if (container.children.length > 30) {
+        container.lastElementChild.remove();
+      }
+    }
+
+    function crearConfeti() {
+      const colores = ['#f9d949', '#FFA500', '#e74c3c', '#27ae60', '#3498db'];
+      for (let i = 0; i < 150; i++) {
+        setTimeout(() => {
+          const conf = document.createElement('div');
+          conf.className = 'confeti';
+          conf.style.left = Math.random() * 100 + 'vw';
+          conf.style.background = colores[Math.floor(Math.random() * colores.length)];
+          conf.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+          conf.style.animation = `confetiCae ${Math.random() * 3 + 2}s linear forwards`;
+          document.body.appendChild(conf);
+          setTimeout(() => conf.remove(), 5000);
+        }, i * 15);
+      }
+    }
+
+    function cerrarModal() {
+      document.getElementById('modalGanador').classList.remove('activo');
+      const botonCerrar = document.getElementById('modalCloseBtn');
+      if (botonCerrar) botonCerrar.style.display = 'inline-block';
+      document.querySelector('#modalGanador h1').textContent = '🎉 ¡BINGO! 🎉';
+    }
+
+    function mostrarError(mensaje) {
+      const banner = document.getElementById('errorBanner');
+      banner.textContent = mensaje;
+      banner.classList.add('active');
+      setTimeout(() => banner.classList.remove('active'), 5000);
+    }
+
+async function reclamarPremioEnServidor(tipoPremio, numeroCarton, info) {
+  const ganadores = obtenerCartonesGanadoresPorTipo(tipoPremio);
+  const premioTotal =
+    tipoPremio === 'fila'
+      ? resumenPremios.fila
+      : tipoPremio === 'columna'
+      ? resumenPremios.columna
+      : resumenPremios.lleno;
+
+  if (!ganadores.length) {
+    return { ok: false, mensaje: 'No hay ganadores para reclamar' };
+  }
+
+  const { data, error } = await supabaseClient.rpc('bingo_reclamar_premio', {
+    p_juego_id: gameId,
+    p_tipo_premio: tipoPremio,
+    p_carton_ganador: Number(numeroCarton),
+    p_ganador_nombre: `${info.nombre} (Cartón #${numeroCarton})`,
+    p_ganadores: ganadores,
+    p_premio_total: premioTotal
+  });
+
+  if (error) throw error;
+
+  return {
+    ok: Boolean(data?.ok),
+    duplicado: Boolean(data?.duplicado),
+    ganadores: data?.ganadores || ganadores,
+    montoPorGanador: Number(data?.monto_por_ganador || 0),
+    totalGanadores: Number(data?.total_ganadores || ganadores.length),
+    codigo: data?.codigo
+  };
+}
+     
+    async function guardarHistorialGanador(tipoPremio, numeroCarton) {
+  try {
+    const info = obtenerInfoCarton(numeroCarton);
+
+    const { error } = await supabaseClient
+      .from('historial_ganadores')
+      .insert([{
+        tipo_premio: tipoPremio,
+        nombre: info.nombre || '',
+        cedula: info.cedula || '',
+        telefono: info.telefono || '',
+        numero_carton: Number(numeroCarton),
+        juego_id: gameId
+      }]);
+
+    if (error) {
+      console.error(`Error guardando historial de ${tipoPremio}:`, error);
+    }
+  } catch (e) {
+    console.error('Error guardando historial:', e);
+  }
+}
+    async function obtenerValorConfiguracion(clave, porDefecto = 0) {
+  const { data, error } = await supabaseClient
+    .from('configuracion')
+    .select('valor')
+    .eq('clave', clave)
+    .maybeSingle();
+
+  if (error) {
+    console.error(`Error cargando configuración ${clave}:`, error);
+    return Number(porDefecto);
+  }
+
+  return Number(data?.valor || porDefecto);
+}
+
+async function acreditarPremioABilletera() {
+  console.warn('acreditarPremioABilletera queda deshabilitada: los premios se acreditan con bingo_reclamar_premio.');
+  return { ok: false, deshabilitado: true };
+}
+    function obtenerCartonesGanadoresPorTipo(tipoPremio) {
+  const universo = obtenerUniversoCartones();
+  const ganadores = [];
+
+  for (const numeroCarton of universo) {
+    if (tipoPremio === 'fila' && tieneFilaCompleta(numeroCarton)) {
+      ganadores.push(numeroCarton);
+    }
+
+    if (tipoPremio === 'columna' && tieneColumnaCompleta(numeroCarton)) {
+      ganadores.push(numeroCarton);
+    }
+
+    if (tipoPremio === 'final') {
+      const marcados = (numerosMarcadosPorCarton[numeroCarton]?.size || 1) - 1;
+      if (marcados === 24) {
+        ganadores.push(numeroCarton);
+      }
+    }
+  }
+
+  return [...new Set(ganadores)].sort((a, b) => a - b);
+}
+    async function repartirPremioEntreGanadores() {
+  console.warn('repartirPremioEntreGanadores queda deshabilitada: usar reclamarPremioEnServidor.');
+  return { ok: false, deshabilitado: true };
+}
+async function reiniciarDespuesDelJuego() {
+  if (reinicioProgramado) return;
+  reinicioProgramado = true;
+
+  try {
+    const { data, error } = await supabaseClient.rpc('bingo_cerrar_juego', {
+      p_juego_id: gameId
+    });
+    if (error) throw error;
+    if (!data?.ok && !data?.duplicado) {
+      throw new Error(data?.codigo || 'No se pudo cerrar el juego');
+    }
+
+    cartonesEnSala = [];
+    cartonesComprados = [];
+    numerosMarcadosPorCarton = {};
+    bolasCantadas = [];
+    pendingBalls = [];
+    bolasProcesadas = new Set();
+    premioTemporalActivo = false;
+    premiosMostrados = { fila: null, columna: null, lleno: null };
+
+    document.getElementById('historialBolas').innerHTML = `
+      <p style="color: rgba(255,255,255,0.4); width: 100%; text-align: center;">
+        Las bolas aparecerán aquí cuando inicie el juego
+      </p>
+    `;
+    document.getElementById('cartonesContainer').innerHTML = `
+      <div class="no-cartones">
+        <h2>🎫 Juego reiniciado</h2>
+        <p>Todos los cartones fueron liberados. Ya puedes comprar nuevos cartones.</p>
+      </div>
+    `;
+
+    document.getElementById('infoCartones').textContent = '0 cartón(es)';
+    document.getElementById('subtitulo').textContent = 'Compra nuevos cartones para el siguiente juego';
+    document.getElementById('premiosTopline').textContent = 'Cartones aprobados en juego: 0';
+    document.getElementById('modalGanador').classList.remove('activo');
+document.querySelector('#modalGanador h1').textContent = '🎉 ¡BINGO! 🎉';
+const botonCerrar = document.getElementById('modalCloseBtn');
+if (botonCerrar) botonCerrar.style.display = 'inline-block';
+    document.getElementById('estadoJuego').className = 'estado-juego estado-esperando';
+document.getElementById('estadoJuego').textContent = '⏳ ESPERANDO NUEVO JUEGO...';
+
+document.getElementById('bolaActual').style.display = 'none';
+document.getElementById('esperandoMensaje').style.display = 'block';
+document.getElementById('esperandoMensaje').textContent =
+  'Juego reiniciado. Compra nuevos cartones para el siguiente juego.';
+
+    await cargarResumenPremios();
+    await cargarCartonesEnSala();
+  } catch (error) {
+    console.error('Error en reinicio automático:', error);
+  } finally {
+    reinicioProgramado = false;
+    temporizadorReinicio = null;
+  }
+}
+
+    window.addEventListener('beforeunload', () => {
+  suscripciones.forEach(s => {
+    try { s.unsubscribe(); } catch (_) {}
+  });
+  if (temporizadorReinicio) clearTimeout(temporizadorReinicio);
+  clearTimeout(refrescoCartonesTimer);
+  clearTimeout(refrescoPremiosTimer);
+});
+    init();
+  </script>
+
+  <style>
+    @keyframes confetiCae {
+      to {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+  </style>
+</body>
+</html>
