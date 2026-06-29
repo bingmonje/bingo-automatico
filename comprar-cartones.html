@@ -424,46 +424,38 @@
       margin: 25px 0;
     }
 
-    .pago-datos {
-      display: inline-block;
-      text-align: left;
-      background: rgba(255,255,255,0.05);
-      padding: 25px;
-      border-radius: 15px;
-      border-left: 4px solid var(--primary);
+    .saldo-compra-resumen {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      max-width: 620px;
+      margin: 20px auto;
     }
 
-    .pago-datos p {
-      margin: 10px 0;
-      font-size: 1.1em;
+    .saldo-compra-item {
+      padding: 18px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
     }
 
-    .pago-datos strong {
+    .saldo-compra-item strong,
+    .saldo-compra-item span {
+      display: block;
+    }
+
+    .saldo-compra-item span {
+      margin-top: 8px;
       color: var(--secondary);
-      display: inline-block;
-      width: 100px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.3em;
+      font-weight: bold;
     }
 
-    .file-input {
-      margin: 25px 0;
-    }
-
-    .file-input input {
-      display: none;
-    }
-
-    .file-label {
-      display: inline-block;
-      padding: 20px 40px;
-      background: rgba(255,165,0,0.1);
-      border: 2px dashed var(--primary);
-      border-radius: 15px;
-      cursor: pointer;
-      transition: all 0.3s ease;
-    }
-
-    .file-label:hover {
-      background: rgba(255,165,0,0.2);
+    .aviso-saldo-compra {
+      margin-top: 16px;
+      font-weight: 700;
+      color: rgba(255,255,255,0.85);
     }
 
     .apartado-banner {
@@ -779,26 +771,13 @@
     margin-top: 10px;
   }
 
-  .pago-info,
-  .pago-datos {
+  .pago-info {
     width: 100%;
     padding: 18px 14px;
   }
 
-  .pago-datos strong {
-    width: auto;
-    display: block;
-    margin-bottom: 4px;
-  }
-
-  .file-label {
-    width: 100%;
-    padding: 18px;
-    text-align: center;
-  }
-
-  #previewComprobante img {
-    max-width: 100% !important;
+  .saldo-compra-resumen {
+    grid-template-columns: 1fr;
   }
 
   .apartado-banner {
@@ -841,7 +820,7 @@
     
     <div class="header">
       <h1>🛒 COMPRAR CARTONES</h1>
-      <p>Elige tus cartones . Tienes 5 minutos para confirmar tu pago.</p>
+      <p>Elige tus cartones. Tienes 5 minutos para confirmar la compra con tu saldo.</p>
       <div class="mi-cuenta-zona">
         <a class="mi-cuenta-enlace" href="cuenta.html" target="_self">👤 Mi cuenta</a>
       </div>
@@ -862,7 +841,7 @@
       </div>
       <div class="step" id="step4-indicator">
         <div class="step-number">4</div>
-        <span>Pago</span>
+        <span>Saldo</span>
       </div>
     </div>
 
@@ -966,46 +945,37 @@
       </div>
     </section>
 
-    <!-- PASO 4: PAGO -->
+    <!-- PASO 4: COMPRA CON SALDO -->
     <section id="step4" class="section">
-      <h2>💳 Realiza tu Pago</h2>
+      <h2>💰 Confirmar compra con saldo</h2>
       
       <div class="pago-info">
-        <h3 style="color: var(--secondary); margin-bottom: 20px;">Datos de Pago Móvil</h3>
-        <div class="pago-datos">
-          <p><strong>Banco:</strong> Mercantil (0105)</p>
-          <p><strong>Teléfono:</strong> 0414-3742385</p>
-          <p><strong>Cédula:</strong> 19353708</p>
-          <p><strong>Monto:</strong> <span id="montoPagar" style="color: var(--primary); font-size: 1.3em; font-weight: bold;">0.00 Bs</span></p>
+        <h3 style="color: var(--secondary);">El monto se descontará automáticamente de tu billetera</h3>
+        <div class="saldo-compra-resumen">
+          <div class="saldo-compra-item">
+            <strong>Saldo disponible</strong>
+            <span id="saldoDisponiblePaso4">0.00 Bs</span>
+          </div>
+          <div class="saldo-compra-item">
+            <strong>Total de la compra</strong>
+            <span id="montoPagar">0.00 Bs</span>
+          </div>
         </div>
+        <p id="avisoSaldoCompra" class="aviso-saldo-compra">Consultando tu saldo...</p>
       </div>
-      
-      <div class="file-input">
-        <input type="file" id="comprobantePago" accept="image/*" onchange="mostrarPreview(this)">
-        <label for="comprobantePago" class="file-label" id="fileLabel">
-          📷 Subir captura del pago
-        </label>
-        <div id="previewComprobante" style="margin-top: 15px;"></div>
-      </div>
-      
-      <div class="input-group" style="max-width: 400px; margin: 25px auto;">
-        <label>Últimos 4 dígitos de la referencia</label>
-        <input type="text" id="referenciaPago" maxlength="4" placeholder="Ej: 1234" style="text-align: center; letter-spacing: 10px; font-size: 1.5em;">
-      </div>
-      
+
       <div style="text-align: center; margin-top: 40px;">
         <button class="btn-secundario" onclick="volverPaso(3)">← Volver</button>
-        <button class="btn-principal" onclick="enviarPago()" id="btnEnviarPago">
-          ✅ Enviar Comprobante
-        </button>
-        
         <button class="btn-principal" onclick="pagarConSaldo()" id="btnPagarSaldo" style="margin-top: 12px; background: linear-gradient(135deg, #27ae60, #2ecc71);">
-  💰 Pagar con saldo
-</button>
+          💰 Confirmar compra con saldo
+        </button>
+        <a href="cuenta.html" target="_self" id="linkRecargarSaldo" class="btn-secundario" style="display:none; margin-top:12px; text-decoration:none;">
+          💳 Recargar saldo
+        </a>
       </div>
       
       <p style="text-align: center; margin-top: 30px; color: var(--warning); font-size: 0.9em;">
-        ⏰ Tienes <strong>5 minutos</strong> para enviar el pago.
+        ⏰ Tienes <strong>5 minutos</strong> para confirmar la compra antes de que se liberen los cartones.
       </p>
     </section>
 
@@ -1254,8 +1224,9 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
     console.error('Error pagando con saldo:', error);
     alert('No se pudo procesar el pago con saldo: ' + error.message);
   } finally {
-    btn.disabled = false;
-    btn.textContent = '💰 Pagar con saldo';
+    if (!pagoEnviado) {
+      await actualizarEstadoPagoConSaldo();
+    }
   }
 }
     
@@ -1299,15 +1270,31 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
   const saldo = await cargarSaldoUsuario();
   const monto = Number(datosComprador.precio_total || 0);
   const btn = document.getElementById('btnPagarSaldo');
+  const saldoPaso4 = document.getElementById('saldoDisponiblePaso4');
+  const aviso = document.getElementById('avisoSaldoCompra');
+  const linkRecarga = document.getElementById('linkRecargarSaldo');
 
   if (!btn) return;
 
+  if (saldoPaso4) saldoPaso4.textContent = `${saldo.toFixed(2)} Bs`;
+
   if (saldo >= monto && monto > 0) {
     btn.disabled = false;
-    btn.textContent = `💰 Pagar con saldo (${saldo.toFixed(2)} Bs)`;
+    btn.textContent = `💰 Confirmar compra por ${monto.toFixed(2)} Bs`;
+    if (aviso) {
+      aviso.textContent = '✅ Saldo suficiente. Tus cartones se aprobarán de inmediato.';
+      aviso.style.color = 'var(--success)';
+    }
+    if (linkRecarga) linkRecarga.style.display = 'none';
   } else {
     btn.disabled = true;
     btn.textContent = '💰 Saldo insuficiente';
+    if (aviso) {
+      const faltante = Math.max(0, monto - saldo);
+      aviso.textContent = `Necesitas recargar ${faltante.toFixed(2)} Bs para completar esta compra.`;
+      aviso.style.color = 'var(--warning)';
+    }
+    if (linkRecarga) linkRecarga.style.display = 'inline-block';
   }
 }
     async function cargarSaldoUsuario() {
@@ -2028,146 +2015,6 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
           }
         )
         .subscribe();
-    }
-
-    function mostrarPreview(input) {
-      if (input.files && input.files[0]) {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          document.getElementById('previewComprobante').innerHTML =
-            `<img src="${e.target.result}" style="max-width: 300px; border-radius: 10px; border: 2px solid var(--primary);">`;
-          document.getElementById('fileLabel').textContent = '📷 Cambiar imagen';
-        };
-        reader.readAsDataURL(input.files[0]);
-      } else {
-        document.getElementById('previewComprobante').innerHTML = '';
-        document.getElementById('fileLabel').textContent = '📷 Subir captura del pago';
-      }
-    }
-
-    async function enviarPago() {
-      if (!await verificarVentasAbiertas()) return;
-
-      if (!miApartadoId) {
-        alert('Primero confirma la selección de tus cartones');
-        return;
-      }
-
-      const file = document.getElementById('comprobantePago').files[0];
-      const referencia = document.getElementById('referenciaPago').value.trim();
-
-      if (!file) {
-        alert('Sube el comprobante');
-        return;
-      }
-
-      const tiposPermitidos = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
-      if (!tiposPermitidos.includes(file.type)) {
-        alert('Solo imágenes (JPG, PNG, WEBP)');
-        return;
-      }
-
-      if (file.size > 5 * 1024 * 1024) {
-        alert('Máximo 5MB');
-        return;
-      }
-
-      if (!/^\d{4}$/.test(referencia)) {
-        alert('Ingresa 4 dígitos de referencia');
-        return;
-      }
-
-      const btn = document.getElementById('btnEnviarPago');
-      btn.disabled = true;
-      btn.textContent = 'Enviando...';
-
-      try {
-        const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
-        const fileName = `comprobante_${miApartadoId}_${Date.now()}.${fileExt}`;
-
-        const { error: uploadError } = await supabaseClient.storage
-          .from('comprobantes')
-          .upload(fileName, file);
-
-        if (uploadError) throw uploadError;
-
-        const { data: { publicUrl } } = supabaseClient
-          .storage
-          .from('comprobantes')
-          .getPublicUrl(fileName);
-
-        const { data: comprobante, error: updateError } = await supabaseClient.rpc('bingo_registrar_comprobante', {
-          p_apartado_id: miApartadoId,
-          p_comprobante_url: publicUrl,
-          p_referencia_pago: referencia
-        });
-
-        if (updateError) throw updateError;
-        if (!comprobante?.ok) {
-          if (comprobante?.codigo === 'ventas_cerradas') {
-            mostrarVentasCerradas();
-            return;
-          }
-          throw new Error(comprobante?.codigo || 'No se pudo registrar el comprobante');
-        }
-
-        clearInterval(timerApartado);
-        timerApartado = null;
-        document.getElementById('apartadoBanner').classList.remove('activo');
-        pagoEnviado = true;
-
-        const cartonesArray = Array.from(cartonesSeleccionados).map(Number).sort((a, b) => a - b);
-        sessionStorage.setItem('modoJuego', 'solo-comprados');
-        sessionStorage.setItem('cartonesComprados', JSON.stringify(cartonesArray));
-        sessionStorage.setItem('cedulaComprador', datosComprador.cedula);
-        sessionStorage.setItem('nombreComprador', datosComprador.nombre);
-
-        miApartadoId = null;
-        mostrarConfirmacionFinal(cartonesArray);
-      } catch (error) {
-        alert('Error: ' + error.message);
-        btn.disabled = false;
-        btn.textContent = '✅ Enviar Comprobante';
-      }
-    }
-
-    function mostrarConfirmacionFinal(cartones) {
-      const step5 = document.getElementById('step5');
-      step5.innerHTML = `
-        <div style="text-align: center; padding: 50px;">
-          <div style="font-size: 5em; margin-bottom: 20px;">✅</div>
-          <h2 style="color: var(--success); margin-bottom: 20px;">¡Compra enviada!</h2>
-
-          <div style="background: rgba(0,0,0,0.3); padding: 25px; border-radius: 15px; margin: 30px 0;">
-            <p style="font-size: 1.2em; margin-bottom: 15px;">
-              Tus cartones: <span style="color: var(--primary); font-weight: bold;">${cartones.join(', ')}</span>
-            </p>
-            <p style="margin-bottom: 10px; color: rgba(255,255,255,0.8);">
-              Cédula para entrar al juego: <span style="color: var(--secondary); font-weight: bold;">${datosComprador.cedula}</span>
-            </p>
-            <p style="color: rgba(255,255,255,0.7); font-size: 0.95em;">
-              Estado actual: <span style="color: var(--warning);">⏳ Pendiente de verificación</span>
-            </p>
-          </div>
-
-          <div style="margin: 40px 0;">
-            <p style="margin-bottom: 20px; color: var(--secondary); font-size: 1.2em;">
-              Cuando el administrador apruebe la compra, entra a la sala con esa cédula.
-            </p>
-            <a href="automatico.html" class="btn-principal" style="text-decoration: none; display: inline-block;">
-              🚀 ENTRAR A LA SALA
-            </a>
-          </div>
-
-          <div style="margin-top: 30px;">
-            <button class="btn-secundario" onclick="location.reload()">
-              🏠 Comprar más cartones
-            </button>
-          </div>
-        </div>
-      `;
-
-      cambiarPaso(5);
     }
 
     document.addEventListener('keydown', (event) => {
