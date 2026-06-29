@@ -226,6 +226,38 @@
     .mensaje-recarga.error { color: var(--danger); }
     .mensaje-recarga.warn { color: var(--warning); }
 
+    .notificacion-recarga {
+      display: none;
+      margin: 0 0 20px;
+      padding: 18px 20px;
+      border-radius: 16px;
+      border: 1px solid rgba(46,204,113,0.55);
+      background: rgba(39,174,96,0.18);
+      color: #d9ffe8;
+      text-align: center;
+      font-weight: 800;
+      box-shadow: 0 10px 26px rgba(0,0,0,0.22);
+    }
+
+    .notificacion-recarga.activa {
+      display: block;
+      animation: aparecerRecarga .35s ease;
+    }
+
+    .saldo-box.saldo-actualizado {
+      animation: resaltarSaldo 1.2s ease;
+    }
+
+    @keyframes aparecerRecarga {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes resaltarSaldo {
+      0%, 100% { box-shadow: none; }
+      50% { box-shadow: 0 0 28px rgba(46,204,113,0.7); border-color: var(--success); }
+    }
+
    @media (max-width: 768px) {
 
   body {
@@ -348,6 +380,8 @@
       <p>Consulta tu saldo y solicita recargas para seguir jugando.</p>
     </div>
 
+    <div id="notificacionRecarga" class="notificacion-recarga" role="status" aria-live="polite"></div>
+
     <div class="card">
       <h2>📌 Información del usuario</h2>
 
@@ -377,7 +411,7 @@
   <h2>⚡ Acciones rápidas</h2>
 
   <div class="actions">
-    <button class="btn-principal" onclick="mostrarSeccion('recarga')">
+    <button class="btn-secundario" onclick="mostrarSeccion('recarga')">
       💳 Recargar saldo
     </button>
 
@@ -389,11 +423,11 @@
       📜 Ver movimientos
     </button>
 
-    <button class="btn-principal" onclick="window.location.href='comprar-cartones.html'">
+    <button class="btn-secundario" onclick="window.location.href='comprar-cartones.html'">
       🎫 2. Escoger cartones
     </button>
 
-    <button class="btn-principal" onclick="window.location.href='automatico.html'">
+    <button class="btn-secundario" onclick="window.location.href='automatico.html'">
       🎱 3. Sala de juego
     </button>
 
@@ -482,6 +516,8 @@
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ';
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let canalRecargasCuenta = null;
+    let temporizadorNotificacionRecarga = null;
 
     function obtenerUsuarioSesion() {
       try {
@@ -522,11 +558,67 @@
       if (error) {
         console.error('Error cargando saldo:', error);
         document.getElementById('saldoUsuario').textContent = 'Error';
-        return;
+        return null;
       }
 
       const saldo = Number(data?.saldo || 0);
       document.getElementById('saldoUsuario').textContent = `${saldo.toFixed(2)} Bs`;
+      return saldo;
+    }
+
+    function mostrarNotificacionRecarga(monto, saldoNuevo) {
+      const aviso = document.getElementById('notificacionRecarga');
+      const montoTexto = Number(monto || 0).toFixed(2);
+      const saldoTexto = Number(saldoNuevo || 0).toFixed(2);
+
+      aviso.textContent = `✅ Recarga de ${montoTexto} Bs aprobada. Tu nuevo saldo es ${saldoTexto} Bs.`;
+      aviso.classList.add('activa');
+
+      const saldoBox = document.querySelector('.saldo-box');
+      if (saldoBox) {
+        saldoBox.classList.remove('saldo-actualizado');
+        void saldoBox.offsetWidth;
+        saldoBox.classList.add('saldo-actualizado');
+      }
+
+      clearTimeout(temporizadorNotificacionRecarga);
+      temporizadorNotificacionRecarga = setTimeout(() => {
+        aviso.classList.remove('activa');
+      }, 12000);
+    }
+
+    function iniciarTiempoRealRecargas(usuario) {
+      if (!usuario?.id || canalRecargasCuenta) return;
+
+      canalRecargasCuenta = supabaseClient
+        .channel(`recargas-cuenta-${usuario.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'recargas_bingo',
+            filter: `usuario_id=eq.${usuario.id}`
+          },
+          async (payload) => {
+            if (payload.new?.estado !== 'aprobado' || payload.old?.estado === 'aprobado') return;
+
+            const saldoNuevo = await cargarCuenta();
+            if (saldoNuevo === null) return;
+
+            mostrarNotificacionRecarga(payload.new?.monto, saldoNuevo);
+
+            const mensaje = document.getElementById('mensajeRecarga');
+            mensaje.className = 'mensaje-recarga ok';
+            mensaje.textContent = `✅ Recarga aprobada. Saldo actualizado: ${saldoNuevo.toFixed(2)} Bs.`;
+
+            const movimientos = document.getElementById('seccionMovimientos');
+            if (movimientos?.style.display !== 'none') {
+              await cargarMovimientos();
+            }
+          }
+        )
+        .subscribe();
     }
 async function solicitarRecarga() {
   const usuario = requerirSesion();
@@ -601,7 +693,7 @@ async function solicitarRecarga() {
     if (insertError) throw insertError;
 
     mensaje.className = 'mensaje-recarga ok';
-    mensaje.textContent = '✅ Recarga enviada correctamente. Cuando el admin la apruebe, toca "2. Escoger cartones".';
+    mensaje.textContent = '✅ Recarga enviada. Te avisaremos aquí y el saldo se actualizará automáticamente cuando sea aprobada.';
 
     document.getElementById('montoRecarga').value = '';
     document.getElementById('referenciaRecarga').value = '';
@@ -724,7 +816,22 @@ async function solicitarRecarga() {
 }
     
    
-    cargarCuenta();
+    async function inicializarCuenta() {
+      const usuario = requerirSesion();
+      if (!usuario) return;
+
+      await cargarCuenta();
+      iniciarTiempoRealRecargas(usuario);
+    }
+
+    window.addEventListener('beforeunload', () => {
+      if (canalRecargasCuenta) {
+        supabaseClient.removeChannel(canalRecargasCuenta);
+      }
+      clearTimeout(temporizadorNotificacionRecarga);
+    });
+
+    inicializarCuenta();
   </script>
 
 </body>
