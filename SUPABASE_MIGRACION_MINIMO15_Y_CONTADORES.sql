@@ -5,6 +5,19 @@ values ('min_cartones_inicio', '15', now())
 on conflict (clave) do update
 set valor = excluded.valor, updated_at = excluded.updated_at;
 
+do $realtime$
+begin
+  if not exists (
+    select 1 from pg_publication_tables
+    where pubname = 'supabase_realtime'
+      and schemaname = 'public'
+      and tablename = 'retiros_bingo'
+  ) then
+    alter publication supabase_realtime add table public.retiros_bingo;
+  end if;
+end
+$realtime$;
+
 create or replace function public.bingo_estado_programacion()
 returns jsonb
 language plpgsql
@@ -254,5 +267,4 @@ end;
 $function$;
 
 revoke all on function public.bingo_servidor_tick() from public, anon, authenticated;
-
 
