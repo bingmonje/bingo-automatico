@@ -1,0 +1,2011 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🛒 Comprar Cartones - Bingo Andino 75</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --primary: #FFA500;
+      --secondary: #f9d949;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --dark: #1a1a2e;
+      --darker: #0f0f1a;
+      --card-bg: rgba(255, 255, 255, 0.05);
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+      min-height: 100vh;
+      color: white;
+    }
+
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+
+    .header {
+      text-align: center;
+      padding: 30px;
+      background: var(--card-bg);
+      border-radius: 20px;
+      margin-bottom: 30px;
+      border: 2px solid var(--primary);
+    }
+
+    .header h1 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary);
+      font-size: 2.5em;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      color: rgba(255,255,255,0.7);
+      font-size: 1.1em;
+    }
+
+    .steps-container {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-bottom: 40px;
+      flex-wrap: wrap;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 15px 25px;
+      background: var(--card-bg);
+      border-radius: 50px;
+      border: 2px solid transparent;
+      transition: all 0.3s ease;
+    }
+
+    .step.active {
+      border-color: var(--primary);
+      background: rgba(255,165,0,0.1);
+    }
+
+    .step.completed {
+      border-color: var(--success);
+      background: rgba(39, 174, 96, 0.1);
+    }
+
+    .step-number {
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+    }
+
+    .step.active .step-number { background: var(--primary); color: #000; }
+    .step.completed .step-number { background: var(--success); }
+
+    .section {
+      background: var(--card-bg);
+      border-radius: 25px;
+      padding: 40px;
+      margin-bottom: 30px;
+      border: 1px solid rgba(255,165,0,0.2);
+      display: none;
+    }
+
+    .section.active { display: block; animation: fadeIn 0.5s ease; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .section h2 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--secondary);
+      margin-bottom: 25px;
+      font-size: 1.8em;
+      text-align: center;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .input-group {
+      text-align: left;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 10px;
+      color: var(--secondary);
+      font-weight: 500;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 18px;
+      border: 2px solid rgba(255,165,0,0.3);
+      border-radius: 12px;
+      background: rgba(0,0,0,0.3);
+      color: white;
+      font-size: 1.1em;
+      transition: all 0.3s ease;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 20px rgba(255,165,0,0.2);
+    }
+
+    .promos-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin: 30px 0;
+    }
+
+    .promo-card {
+      background: linear-gradient(135deg, rgba(255,165,0,0.2), rgba(255,165,0,0.05));
+      border: 2px solid var(--primary);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .promo-card::before {
+      content: '⭐';
+      position: absolute;
+      top: -20px;
+      right: -20px;
+      font-size: 4em;
+      opacity: 0.1;
+    }
+
+    .promo-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(255,165,0,0.3);
+    }
+
+    .promo-card.selected {
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      color: #000;
+      transform: scale(1.02);
+    }
+
+    .promo-card.selected * { color: #000 !important; }
+
+    .promo-titulo {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.3em;
+      margin-bottom: 15px;
+      color: var(--primary);
+    }
+
+    .promo-descripcion {
+      font-size: 0.95em;
+      margin-bottom: 20px;
+      opacity: 0.9;
+    }
+
+    .promo-precio {
+      font-size: 2.5em;
+      font-weight: bold;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .promo-ahorro {
+      display: inline-block;
+      background: var(--success);
+      color: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 0.85em;
+      margin-top: 15px;
+    }
+
+    .selector-cantidad {
+      text-align: center;
+      margin: 40px 0;
+      padding: 30px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 20px;
+    }
+
+    .cantidad-control {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      margin: 25px 0;
+    }
+
+    .btn-cantidad {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: none;
+      background: var(--primary);
+      color: #000;
+      font-size: 2em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-cantidad:hover { transform: scale(1.1); box-shadow: 0 10px 30px rgba(255,165,0,0.4); }
+
+    #cantidadInput {
+      width: 120px;
+      padding: 15px;
+      font-size: 2em;
+      text-align: center;
+      border: 3px solid var(--primary);
+      border-radius: 15px;
+      background: rgba(0,0,0,0.3);
+      color: white;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .precio-total {
+      font-size: 2em;
+      margin-top: 20px;
+    }
+
+    .precio-total strong {
+      color: var(--secondary);
+      font-size: 1.5em;
+    }
+
+    .cartones-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+      gap: 15px;
+      max-height: 600px;
+      overflow-y: auto;
+      padding: 20px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 20px;
+    }
+
+    .carton-item {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.1);
+      border: 2px solid rgba(255,165,0,0.3);
+      border-radius: 15px;
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.3em;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+
+    .carton-item:hover:not(.ocupado):not(.apartado):not(.seleccionado) {
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+
+    .carton-item.seleccionado {
+      background: var(--success);
+      border-color: var(--success);
+      transform: scale(1.05);
+      box-shadow: 0 0 20px rgba(39, 174, 96, 0.5);
+    }
+
+    .carton-item.ocupado {
+      background: var(--danger);
+      border-color: var(--danger);
+      cursor: not-allowed;
+      opacity: 0.7;
+    }
+
+    .carton-item.apartado {
+      background: var(--warning);
+      border-color: var(--warning);
+      cursor: not-allowed;
+      animation: pulseApartado 2s infinite;
+    }
+
+    @keyframes pulseApartado {
+      0%, 100% { opacity: 0.8; }
+      50% { opacity: 1; box-shadow: 0 0 15px var(--warning); }
+    }
+
+    .carton-item .timer {
+      position: absolute;
+      bottom: 5px;
+      font-size: 0.6em;
+      background: rgba(0,0,0,0.7);
+      padding: 2px 6px;
+      border-radius: 10px;
+    }
+
+    .seleccion-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 25px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 15px;
+      margin-top: 25px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .seleccion-stats {
+      display: flex;
+      gap: 30px;
+      flex-wrap: wrap;
+    }
+
+    .stat {
+      text-align: center;
+    }
+
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: var(--primary);
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .stat-label {
+      font-size: 0.9em;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .btn-principal {
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      color: white;
+      border: none;
+      padding: 20px 50px;
+      font-size: 1.2em;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .btn-principal:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 40px rgba(255,165,0,0.4);
+    }
+
+    .btn-principal:disabled {
+      background: #666;
+      cursor: not-allowed;
+    }
+
+    .btn-secundario {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+      padding: 15px 30px;
+      border-radius: 50px;
+      cursor: pointer;
+      font-size: 1em;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secundario:hover {
+      background: var(--primary);
+      color: #000;
+    }
+
+    .pago-info {
+      background: rgba(0,0,0,0.3);
+      padding: 30px;
+      border-radius: 20px;
+      text-align: center;
+      margin: 25px 0;
+    }
+
+    .pago-datos {
+      display: inline-block;
+      text-align: left;
+      background: rgba(255,255,255,0.05);
+      padding: 25px;
+      border-radius: 15px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .pago-datos p {
+      margin: 10px 0;
+      font-size: 1.1em;
+    }
+
+    .pago-datos strong {
+      color: var(--secondary);
+      display: inline-block;
+      width: 100px;
+    }
+
+    .file-input {
+      margin: 25px 0;
+    }
+
+    .file-input input {
+      display: none;
+    }
+
+    .file-label {
+      display: inline-block;
+      padding: 20px 40px;
+      background: rgba(255,165,0,0.1);
+      border: 2px dashed var(--primary);
+      border-radius: 15px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .file-label:hover {
+      background: rgba(255,165,0,0.2);
+    }
+
+    .apartado-banner {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: var(--warning);
+      color: #000;
+      padding: 20px;
+      border-radius: 15px;
+      font-weight: bold;
+      display: none;
+      z-index: 1000;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .apartado-banner.activo {
+      display: block;
+      animation: slideIn 0.5s ease;
+    }
+
+    @keyframes slideIn {
+      from { transform: translateX(400px); }
+      to { transform: translateX(0); }
+    }
+
+    #timerApartado {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.5em;
+      color: var(--danger);
+    }
+
+
+    .carton-preview-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.88);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 3000;
+    }
+
+    .carton-preview-modal.activo {
+      display: flex;
+      animation: fadeIn 0.25s ease;
+    }
+
+    .carton-preview-dialog {
+      width: min(95vw, 560px);
+      background: linear-gradient(135deg, rgba(26,26,46,0.98), rgba(15,15,26,0.98));
+      border: 2px solid var(--primary);
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.55);
+      position: relative;
+    }
+
+    .carton-preview-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      border: none;
+      cursor: pointer;
+      font-size: 1.4em;
+      background: rgba(255,255,255,0.1);
+      color: white;
+    }
+
+    .carton-preview-head {
+      text-align: center;
+      margin-bottom: 18px;
+    }
+
+    .carton-preview-head h3 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary);
+      margin-bottom: 8px;
+      font-size: 1.5em;
+    }
+
+    .carton-preview-status {
+      display: inline-block;
+      padding: 8px 16px;
+      border-radius: 999px;
+      font-weight: bold;
+      font-size: 0.95em;
+    }
+
+    .carton-preview-status.disponible {
+      background: rgba(39, 174, 96, 0.18);
+      color: var(--success);
+    }
+
+    .carton-preview-status.seleccionado {
+      background: rgba(39, 174, 96, 0.22);
+      color: #7dffb0;
+    }
+
+    .carton-preview-status.apartado {
+      background: rgba(243, 156, 18, 0.18);
+      color: var(--warning);
+    }
+
+    .carton-preview-status.ocupado {
+      background: rgba(231, 76, 60, 0.18);
+      color: var(--danger);
+    }
+
+    .carton-preview-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      padding: 18px;
+      background: rgba(0,0,0,0.28);
+      border-radius: 18px;
+      margin-bottom: 18px;
+    }
+
+    .carton-preview-cell {
+      min-height: 54px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      font-weight: bold;
+      font-size: 1.1em;
+    }
+
+    .carton-preview-cell.header {
+      font-family: 'Orbitron', sans-serif;
+      background: rgba(255,165,0,0.2);
+      color: var(--secondary);
+      border: 1px solid rgba(255,165,0,0.3);
+    }
+
+    .carton-preview-cell.number {
+      background: rgba(255,255,255,0.92);
+      color: #1c2a39;
+    }
+
+    .carton-preview-cell.free {
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      color: white;
+      font-size: 0.9em;
+    }
+
+    .carton-preview-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+  .container {
+    padding: 12px;
+  }
+
+  .header {
+    padding: 22px 14px;
+    border-radius: 16px;
+    margin-bottom: 18px;
+  }
+
+  .header h1 {
+    font-size: 1.45em;
+    line-height: 1.2;
+  }
+
+  .header p {
+    font-size: 0.95em;
+  }
+
+  .steps-container {
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .step {
+    padding: 10px 12px;
+    font-size: 0.82em;
+    border-radius: 14px;
+  }
+
+  .step-number {
+    width: 28px;
+    height: 28px;
+  }
+
+  .section {
+    padding: 22px 14px;
+    border-radius: 18px;
+  }
+
+  .section h2 {
+    font-size: 1.25em;
+    line-height: 1.3;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .input-group input {
+    padding: 15px;
+    font-size: 1em;
+  }
+
+  .promos-container {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .promo-card {
+    padding: 20px 16px;
+  }
+
+  .promo-precio {
+    font-size: 2em;
+  }
+
+  .selector-cantidad {
+    padding: 20px 12px;
+  }
+
+  .cantidad-control {
+    gap: 12px;
+  }
+
+  .btn-cantidad {
+    width: 52px;
+    height: 52px;
+  }
+
+  #cantidadInput {
+    width: 90px;
+    font-size: 1.6em;
+  }
+
+  .cartones-grid {
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    padding: 10px;
+    max-height: 55vh;
+  }
+
+  .carton-item {
+    min-height: 52px;
+    font-size: 0.95em;
+    border-radius: 10px;
+  }
+
+  .seleccion-info {
+    padding: 16px;
+    display: block;
+    text-align: center;
+  }
+
+  .seleccion-stats {
+    justify-content: center;
+    gap: 18px;
+    margin-bottom: 18px;
+  }
+
+  .stat-value {
+    font-size: 1.45em;
+  }
+
+  .btn-principal,
+  .btn-secundario {
+    width: 100%;
+    padding: 16px 18px;
+    font-size: 0.95em;
+    margin-top: 10px;
+  }
+
+  .pago-info,
+  .pago-datos {
+    width: 100%;
+    padding: 18px 14px;
+  }
+
+  .pago-datos strong {
+    width: auto;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .file-label {
+    width: 100%;
+    padding: 18px;
+    text-align: center;
+  }
+
+  #previewComprobante img {
+    max-width: 100% !important;
+  }
+
+  .apartado-banner {
+    top: auto;
+    right: 12px;
+    left: 12px;
+    bottom: 12px;
+    text-align: center;
+  }
+
+  .carton-preview-dialog {
+    width: 96vw;
+    padding: 18px 12px;
+    border-radius: 18px;
+  }
+
+  .carton-preview-grid {
+    gap: 6px;
+    padding: 10px;
+  }
+
+  .carton-preview-cell {
+    min-height: 42px;
+    font-size: 0.9em;
+    border-radius: 8px;
+  }
+}
+  </style>
+<base target="_blank">
+</head>
+<body>
+
+  <div id="apartadoBanner" class="apartado-banner">
+    ⏰ Tiempo restante: <span id="timerApartado">05:00</span>
+  </div>
+
+  <div class="container">
+    
+    <div class="header">
+      <h1>🛒 COMPRAR CARTONES</h1>
+      <p>Elige tus cartones . Tienes 5 minutos para confirmar tu pago.</p>
+    </div>
+
+    <div class="steps-container">
+      <div class="step active" id="step1-indicator">
+        <div class="step-number">1</div>
+        <span>Tus Datos</span>
+      </div>
+      <div class="step" id="step2-indicator">
+        <div class="step-number">2</div>
+        <span>Promoción</span>
+      </div>
+      <div class="step" id="step3-indicator">
+        <div class="step-number">3</div>
+        <span>Elige Cartones</span>
+      </div>
+      <div class="step" id="step4-indicator">
+        <div class="step-number">4</div>
+        <span>Pago</span>
+      </div>
+    </div>
+
+    <!-- PASO 1: DATOS -->
+    <section id="step1" class="section active">
+      <h2>👤 Ingresa tus Datos</h2>
+      
+      <div class="form-grid">
+        <div class="input-group">
+          <label>Nombre completo</label>
+          <input type="text" id="nombreComprador" placeholder="Ej: María González">
+        </div>
+        <div class="input-group">
+          <label>Teléfono</label>
+          <input type="tel" id="telefonoComprador" placeholder="Ej: 0414-1234567">
+        </div>
+        <div class="input-group">
+          <label>Cédula de identidad</label>
+          <input type="text" id="cedulaComprador" placeholder="Ej: V-12345678">
+        </div>
+        <div class="input-group">
+          <label>Correo electrónico (opcional)</label>
+          <input type="email" id="emailComprador" placeholder="Ej: usuario@email.com">
+        </div>
+      </div>
+      
+      <div style="text-align: center; margin-top: 40px;">
+        <button class="btn-principal" onclick="irPaso2()">
+          Continuar →
+        </button>
+      </div>
+    </section>
+
+    <!-- PASO 2: PROMOCIONES -->
+    <section id="step2" class="section">
+      <h2>🎯 Selecciona una Promoción</h2>
+      <div id="saldoBox" style="background: rgba(39,174,96,0.12); border: 1px solid rgba(39,174,96,0.35); padding: 18px; border-radius: 14px; margin: 20px 0; text-align: center;">
+  <strong>💰 Saldo disponible:</strong>
+  <span id="saldoDisponibleCompra">0.00 Bs</span>
+</div>
+      <div id="promosContainer" class="promos-container">
+        <p style="text-align: center; color: rgba(255,255,255,0.6);">
+          Cargando promociones...
+        </p>
+      </div>
+
+      <div class="selector-cantidad" id="selectorManual" style="display: none;">
+        <h3>O selecciona cantidad manual:</h3>
+        <div class="cantidad-control">
+          <button class="btn-cantidad" onclick="cambiarCantidad(-1)">−</button>
+          <input type="number" id="cantidadInput" value="1" min="1" max="100" readonly>
+          <button class="btn-cantidad" onclick="cambiarCantidad(1)">+</button>
+        </div>
+        <p class="precio-total">
+          Total: <strong id="precioTotal">0.00 Bs</strong>
+        </p>
+      </div>
+      
+      <div style="text-align: center; margin-top: 30px;">
+        <button class="btn-secundario" onclick="volverPaso(1)">← Volver</button>
+        <button class="btn-principal" onclick="irPaso3()" id="btnContinuarPaso2" disabled>
+          Continuar →
+        </button>
+      </div>
+    </section>
+
+    <!-- PASO 3: SELECCIONAR CARTONES -->
+    <section id="step3" class="section">
+      <h2>🎫 Elige tus Cartones </h2>
+      
+      <p style="text-align: center; margin-bottom: 20px; color: rgba(255,255,255,0.8);">
+        <span style="color: var(--success);">● Verde:</span> Disponible | 
+        <span style="color: var(--warning);">● Amarillo:</span> Apartado | 
+        <span style="color: var(--danger);">● Rojo:</span> Ocupado
+      </p>
+      
+      <div class="cartones-grid" id="gridCartones"></div>
+      
+      <div class="seleccion-info">
+        <div class="seleccion-stats">
+          <div class="stat">
+            <div class="stat-value" id="statSeleccionados">0</div>
+            <div class="stat-label">Seleccionados</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="statRequeridos">0</div>
+            <div class="stat-label">Requeridos</div>
+          </div>
+          <div class="stat">
+            <div class="stat-value" id="statTotal">0</div>
+            <div class="stat-label">Total Bs</div>
+          </div>
+        </div>
+        <button class="btn-principal" onclick="confirmarSeleccion()" id="btnConfirmarCartones" disabled>
+          Confirmar Selección
+        </button>
+      </div>
+      
+      <div style="text-align: center; margin-top: 20px;">
+        <button class="btn-secundario" onclick="volverPaso(2)">← Volver</button>
+      </div>
+    </section>
+
+    <!-- PASO 4: PAGO -->
+    <section id="step4" class="section">
+      <h2>💳 Realiza tu Pago</h2>
+      
+      <div class="pago-info">
+        <h3 style="color: var(--secondary); margin-bottom: 20px;">Datos de Pago Móvil</h3>
+        <div class="pago-datos">
+          <p><strong>Banco:</strong> Mercantil (0105)</p>
+          <p><strong>Teléfono:</strong> 0414-3742385</p>
+          <p><strong>Cédula:</strong> 19353708</p>
+          <p><strong>Monto:</strong> <span id="montoPagar" style="color: var(--primary); font-size: 1.3em; font-weight: bold;">0.00 Bs</span></p>
+        </div>
+      </div>
+      
+      <div class="file-input">
+        <input type="file" id="comprobantePago" accept="image/*" onchange="mostrarPreview(this)">
+        <label for="comprobantePago" class="file-label" id="fileLabel">
+          📷 Subir captura del pago
+        </label>
+        <div id="previewComprobante" style="margin-top: 15px;"></div>
+      </div>
+      
+      <div class="input-group" style="max-width: 400px; margin: 25px auto;">
+        <label>Últimos 4 dígitos de la referencia</label>
+        <input type="text" id="referenciaPago" maxlength="4" placeholder="Ej: 1234" style="text-align: center; letter-spacing: 10px; font-size: 1.5em;">
+      </div>
+      
+      <div style="text-align: center; margin-top: 40px;">
+        <button class="btn-secundario" onclick="volverPaso(3)">← Volver</button>
+        <button class="btn-principal" onclick="enviarPago()" id="btnEnviarPago">
+          ✅ Enviar Comprobante
+        </button>
+        
+        <button class="btn-principal" onclick="pagarConSaldo()" id="btnPagarSaldo" style="margin-top: 12px; background: linear-gradient(135deg, #27ae60, #2ecc71);">
+  💰 Pagar con saldo
+</button>
+      </div>
+      
+      <p style="text-align: center; margin-top: 30px; color: var(--warning); font-size: 0.9em;">
+        ⏰ Tienes <strong>5 minutos</strong> para enviar el pago.
+      </p>
+    </section>
+
+    <!-- PASO 5: CONFIRMACIÓN -->
+    <section id="step5" class="section">
+      <!-- Se genera dinámicamente -->
+    </section>
+
+  </div>
+
+
+  <div id="cartonPreviewModal" class="carton-preview-modal" onclick="cerrarPreviewCarton(event)">
+    <div class="carton-preview-dialog" onclick="event.stopPropagation()">
+      <button class="carton-preview-close" type="button" onclick="cerrarPreviewCarton()">×</button>
+      <div class="carton-preview-head">
+        <h3 id="cartonPreviewTitulo">Cartón #0001</h3>
+        <div id="cartonPreviewEstado" class="carton-preview-status disponible">Disponible</div>
+      </div>
+      <div id="cartonPreviewGrid" class="carton-preview-grid"></div>
+      <div class="carton-preview-actions">
+        <button class="btn-secundario" type="button" onclick="cerrarPreviewCarton()">Cerrar</button>
+        <button class="btn-principal" type="button" id="btnPreviewSeleccion" onclick="toggleCartonDesdePreview()">
+          Seleccionar este cartón
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    let datosComprador = {};
+    let promocionSeleccionada = null;
+    let promociones = [];
+    let precioUnitario = 0;
+    let cantidadRequerida = 0;
+    let cartonesSeleccionados = new Set();
+    let cartonesApartados = new Set();
+    let cartonesOcupados = new Set();
+    let miApartadoId = null;
+    let timerApartado = null;
+    let tiempoRestante = 300;
+    let suscripcionTiempoReal = null;
+    let pagoEnviado = false;
+    let procesandoSeleccion = false;
+    let cartonPreviewNumero = null;
+let cantidadCartonesDisponibles = 1000;
+    let rotacionCartones = 0;
+    let gridCartonesInicializado = false;
+    const RANGOS_CARTON = {
+      B: [1, 15],
+      I: [16, 30],
+      N: [31, 45],
+      G: [46, 60],
+      O: [61, 75]
+    };
+
+    function obtenerUsuarioSesion() {
+  try {
+    return JSON.parse(localStorage.getItem('usuario_bingo'));
+  } catch {
+    return null;
+  }
+}
+
+function requerirSesion() {
+  const usuario = obtenerUsuarioSesion();
+  if (!usuario) {
+    window.location.href = 'login.html';
+    return null;
+  }
+  return usuario;
+}
+    async function pagarConSaldo() {
+  if (!miApartadoId) {
+    alert('Primero confirma la selección de tus cartones');
+    return;
+  }
+
+  const usuario = JSON.parse(localStorage.getItem('usuario_bingo') || 'null');
+  if (!usuario) {
+    alert('Debes iniciar sesión');
+    window.location.href = 'login.html';
+    return;
+  }
+
+  const cartonesArray = Array.from(cartonesSeleccionados).map(Number).sort((a, b) => a - b);
+  const btn = document.getElementById('btnPagarSaldo');
+  btn.disabled = true;
+  btn.textContent = 'Procesando...';
+
+  try {
+    const { data, error } = await supabaseClient.rpc('bingo_pagar_con_saldo', {
+      p_apartado_id: miApartadoId,
+      p_usuario_id: usuario.id
+    });
+
+    if (error) throw error;
+
+    if (!data?.ok) {
+      if (data?.codigo === 'saldo_insuficiente') {
+        alert(`Saldo insuficiente. Tienes ${Number(data.saldo || 0).toFixed(2)} Bs y necesitas ${Number(data.monto || 0).toFixed(2)} Bs`);
+        await cargarSaldoUsuario();
+        return;
+      }
+
+      if (data?.codigo === 'cartones_ocupados') {
+        alert('Estos cartones ya no están disponibles: ' + (data.ocupados || []).join(', '));
+        await cargarEstadoCartones();
+        return;
+      }
+
+      throw new Error(data?.codigo || 'No se pudo procesar el pago');
+    }
+
+    clearInterval(timerApartado);
+    timerApartado = null;
+    document.getElementById('apartadoBanner').classList.remove('activo');
+    pagoEnviado = true;
+
+    sessionStorage.setItem('modoJuego', 'solo-comprados');
+    sessionStorage.setItem('cartonesComprados', JSON.stringify(cartonesArray));
+    sessionStorage.setItem('cedulaComprador', datosComprador.cedula);
+    sessionStorage.setItem('nombreComprador', datosComprador.nombre);
+
+    miApartadoId = null;
+
+    await cargarSaldoUsuario();
+    mostrarConfirmacionSaldo(cartonesArray, data.saldo_nuevo);
+
+  } catch (error) {
+    console.error('Error pagando con saldo:', error);
+    alert('No se pudo procesar el pago con saldo: ' + error.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '💰 Pagar con saldo';
+  }
+}
+    
+    function mostrarConfirmacionSaldo(cartones, saldoRestante) {
+  const step5 = document.getElementById('step5');
+  step5.innerHTML = `
+    <div style="text-align: center; padding: 50px;">
+      <div style="font-size: 5em; margin-bottom: 20px;">💰</div>
+      <h2 style="color: var(--success); margin-bottom: 20px;">¡Compra realizada con saldo!</h2>
+
+      <div style="background: rgba(0,0,0,0.3); padding: 25px; border-radius: 15px; margin: 30px 0;">
+        <p style="font-size: 1.2em; margin-bottom: 15px;">
+          Tus cartones: <span style="color: var(--primary); font-weight: bold;">${cartones.join(', ')}</span>
+        </p>
+        <p style="margin-bottom: 10px; color: rgba(255,255,255,0.8);">
+          Pago procesado automáticamente desde tu billetera.
+        </p>
+        <p style="color: rgba(255,255,255,0.8);">
+          Saldo restante: <span style="color: var(--secondary); font-weight: bold;">${Number(saldoRestante).toFixed(2)} Bs</span>
+        </p>
+      </div>
+
+      <div style="margin: 40px 0;">
+        <a href="automatico.html" class="btn-principal" style="text-decoration: none; display: inline-block;">
+          🚀 ENTRAR A LA SALA
+        </a>
+      </div>
+
+      <div style="margin-top: 30px;">
+        <button class="btn-secundario" onclick="location.reload()">
+          🏠 Comprar más cartones
+        </button>
+      </div>
+    </div>
+  `;
+
+  cambiarPaso(5);
+}
+    
+    async function actualizarEstadoPagoConSaldo() {
+  const saldo = await cargarSaldoUsuario();
+  const monto = Number(datosComprador.precio_total || 0);
+  const btn = document.getElementById('btnPagarSaldo');
+
+  if (!btn) return;
+
+  if (saldo >= monto && monto > 0) {
+    btn.disabled = false;
+    btn.textContent = `💰 Pagar con saldo (${saldo.toFixed(2)} Bs)`;
+  } else {
+    btn.disabled = true;
+    btn.textContent = '💰 Saldo insuficiente';
+  }
+}
+    async function cargarSaldoUsuario() {
+  const usuario = JSON.parse(localStorage.getItem('usuario_bingo') || 'null');
+  if (!usuario) return 0;
+
+  const { data, error } = await supabaseClient
+    .from('billeteras_bingo')
+    .select('saldo')
+    .eq('usuario_id', usuario.id)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error cargando saldo del usuario:', error);
+    document.getElementById('saldoDisponibleCompra').textContent = 'Error';
+    return 0;
+  }
+
+  const saldo = Number(data?.saldo || 0);
+  document.getElementById('saldoDisponibleCompra').textContent = `${saldo.toFixed(2)} Bs`;
+  return saldo;
+}
+    async function cargarRotacionCartones() {
+  const { data, error } = await supabaseClient
+    .from('configuracion')
+    .select('valor')
+    .eq('clave', 'rotacion_cartones')
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error cargando rotación de cartones:', error);
+    rotacionCartones = 0;
+    return;
+  }
+
+  const valor = parseInt(data?.valor ?? '0', 10);
+  rotacionCartones = Number.isInteger(valor) && valor >= 0 ? valor : 0;
+}
+    function normalizarCedula(valor) {
+      const limpio = (valor || '').trim().toUpperCase().replace(/\s+/g, '');
+      if (!limpio) return '';
+
+      const prefijo = /^[VEJPGR]-?/i.test(limpio) ? limpio[0].toUpperCase() : '';
+      const digitos = limpio.replace(/\D/g, '');
+      if (!digitos) return limpio;
+
+      return prefijo ? `${prefijo}-${digitos}` : digitos;
+    }
+    
+    async function cargarCantidadCartonesDisponibles() {
+  const { data, error } = await supabaseClient
+    .from('configuracion')
+    .select('valor')
+    .eq('clave', 'cantidad_cartones_disponibles')
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error cargando cantidad disponible:', error);
+    cantidadCartonesDisponibles = 1000;
+    return;
+  }
+
+  cantidadCartonesDisponibles = parseInt(data?.valor || '1000', 10);
+
+  if (!Number.isInteger(cantidadCartonesDisponibles) || cantidadCartonesDisponibles < 1) {
+    cantidadCartonesDisponibles = 1000;
+  }
+}
+
+    function generarVariantesCedula(valor) {
+      const limpio = normalizarCedula(valor);
+      const digitos = limpio.replace(/\D/g, '');
+      const variantes = new Set();
+
+      if (limpio) variantes.add(limpio);
+      if (digitos) {
+        variantes.add(digitos);
+        variantes.add(`V-${digitos}`);
+        variantes.add(`V${digitos}`);
+        variantes.add(`E-${digitos}`);
+        variantes.add(`E${digitos}`);
+      }
+
+      return Array.from(variantes);
+    }
+
+    function restaurarDatosGuardados() {
+      const nombre = sessionStorage.getItem('nombreComprador') || '';
+      const cedula = sessionStorage.getItem('cedulaComprador') || '';
+
+      if (nombre) document.getElementById('nombreComprador').value = nombre;
+      if (cedula) document.getElementById('cedulaComprador').value = cedula;
+    }
+
+  async function init() {
+  const usuario = requerirSesion();
+  if (!usuario) return;
+
+  document.getElementById('nombreComprador').readOnly = true;
+  document.getElementById('telefonoComprador').readOnly = true;
+  document.getElementById('cedulaComprador').readOnly = true;
+
+  document.getElementById('nombreComprador').value = usuario.nombre || '';
+  document.getElementById('telefonoComprador').value = usuario.telefono || '';
+  document.getElementById('cedulaComprador').value = usuario.cedula || '';
+
+  await cargarPrecioUnitario();
+  await cargarCantidadCartonesDisponibles();
+  await cargarRotacionCartones();
+  await cargarPromociones();
+  await cargarSaldoUsuario();
+  generarGridCartones();
+  iniciarSuscripcionTiempoReal();
+}
+
+    async function cargarPrecioUnitario() {
+      const { data } = await supabaseClient
+        .from('configuracion')
+        .select('valor')
+        .eq('clave', 'precio_carton')
+        .single();
+
+      precioUnitario = parseFloat(data?.valor) || 5.00;
+      actualizarPrecioManual();
+    }
+
+    async function cargarPromociones() {
+      const { data } = await supabaseClient
+        .from('promociones_cartones')
+        .select('*')
+        .eq('activa', true)
+        .order('cantidad', { ascending: true });
+
+      promociones = data || [];
+      renderizarPromociones();
+    }
+
+    function renderizarPromociones() {
+      const container = document.getElementById('promosContainer');
+
+      if (promociones.length === 0) {
+        container.innerHTML = '<p style="text-align: center;">No hay promociones activas</p>';
+        mostrarSelectorManual();
+        return;
+      }
+
+      container.innerHTML = '';
+
+      promociones.forEach(promo => {
+        const ahorro = Math.max(0, (promo.cantidad * precioUnitario) - promo.precio).toFixed(2);
+        const div = document.createElement('div');
+        div.className = 'promo-card';
+        div.onclick = () => seleccionarPromocion(promo, div);
+        div.innerHTML = `
+          <div class="promo-titulo">${promo.nombre}</div>
+          <div class="promo-descripcion">${promo.descripcion || ''}</div>
+          <div class="promo-precio">${Number(promo.precio).toFixed(2)} Bs</div>
+          <div style="color: rgba(255,255,255,0.7); font-size: 0.9em;">
+            ${promo.cantidad} cartones
+          </div>
+          ${Number(ahorro) > 0 ? `<span class="promo-ahorro">¡Ahorra ${ahorro} Bs!</span>` : ''}
+        `;
+        container.appendChild(div);
+      });
+
+      const personalizado = document.createElement('div');
+      personalizado.className = 'promo-card';
+      personalizado.style.background = 'rgba(255,255,255,0.05)';
+      personalizado.onclick = () => mostrarSelectorManual();
+      personalizado.innerHTML = `
+        <div class="promo-titulo" style="color: #aaa;">Personalizado</div>
+        <div class="promo-descripcion">Elige la cantidad que desees</div>
+        <div class="promo-precio" style="font-size: 1.5em; color: #aaa;">${precioUnitario.toFixed(2)} Bs/cartón</div>
+      `;
+      container.appendChild(personalizado);
+    }
+
+    function seleccionarPromocion(promo, elemento) {
+      document.querySelectorAll('.promo-card').forEach(c => c.classList.remove('selected'));
+      elemento.classList.add('selected');
+
+      promocionSeleccionada = promo;
+      cantidadRequerida = promo.cantidad;
+      document.getElementById('cantidadInput').value = promo.cantidad;
+      document.getElementById('selectorManual').style.display = 'none';
+      document.getElementById('btnContinuarPaso2').disabled = false;
+      document.getElementById('precioTotal').textContent = Number(promo.precio).toFixed(2) + ' Bs';
+    }
+
+    function mostrarSelectorManual() {
+      document.querySelectorAll('.promo-card').forEach(c => c.classList.remove('selected'));
+      promocionSeleccionada = null;
+      document.getElementById('selectorManual').style.display = 'block';
+      document.getElementById('btnContinuarPaso2').disabled = false;
+      actualizarPrecioManual();
+    }
+
+    function cambiarCantidad(delta) {
+      const input = document.getElementById('cantidadInput');
+      let val = parseInt(input.value || '1', 10) + delta;
+      val = Math.max(1, Math.min(100, val));
+      input.value = val;
+      actualizarPrecioManual();
+    }
+
+    function actualizarPrecioManual() {
+      const cantidad = parseInt(document.getElementById('cantidadInput').value || '1', 10) || 1;
+      cantidadRequerida = cantidad;
+      const total = cantidad * precioUnitario;
+      document.getElementById('precioTotal').textContent = total.toFixed(2) + ' Bs';
+    }
+
+    function irPaso2() {
+      const nombre = document.getElementById('nombreComprador').value.trim();
+      const telefono = document.getElementById('telefonoComprador').value.trim();
+      const cedula = normalizarCedula(document.getElementById('cedulaComprador').value);
+      const email = document.getElementById('emailComprador').value.trim();
+
+      if (!nombre || !telefono || !cedula) {
+        alert('Completa todos los campos obligatorios');
+        return;
+      }
+
+      datosComprador = { nombre, telefono, cedula, email };
+      document.getElementById('cedulaComprador').value = cedula;
+      sessionStorage.setItem('nombreComprador', nombre);
+      sessionStorage.setItem('cedulaComprador', cedula);
+      cambiarPaso(2);
+    }
+
+    async function irPaso3() {
+      if (promocionSeleccionada) {
+        datosComprador.cantidad = promocionSeleccionada.cantidad;
+        datosComprador.precio_total = Number(promocionSeleccionada.precio);
+        datosComprador.promocion_id = promocionSeleccionada.id;
+      } else {
+        datosComprador.cantidad = parseInt(document.getElementById('cantidadInput').value || '1', 10) || 1;
+        datosComprador.precio_total = datosComprador.cantidad * precioUnitario;
+        datosComprador.promocion_id = null;
+      }
+
+      if (cartonesSeleccionados.size > datosComprador.cantidad) {
+        cartonesSeleccionados = new Set(Array.from(cartonesSeleccionados).slice(0, datosComprador.cantidad));
+      }
+
+      document.getElementById('statRequeridos').textContent = datosComprador.cantidad;
+      document.getElementById('statTotal').textContent = datosComprador.precio_total.toFixed(2) + ' Bs';
+      document.getElementById('montoPagar').textContent = datosComprador.precio_total.toFixed(2) + ' Bs';
+
+      await cargarEstadoCartones();
+      actualizarStats();
+      cambiarPaso(3);
+    }
+
+    async function volverPaso(n) {
+      const estabaEnPago = document.getElementById('step4').classList.contains('active');
+
+      if (estabaEnPago && miApartadoId && !pagoEnviado && n < 4) {
+        await liberarApartados({ mantenerSeleccion: true });
+      }
+
+      cambiarPaso(n);
+    }
+
+    function cambiarPaso(n) {
+      document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+
+      for (let i = 1; i <= 4; i++) {
+        const indicator = document.getElementById(`step${i}-indicator`);
+        if (!indicator) continue;
+
+        indicator.classList.remove('active', 'completed');
+
+        if (n > 4 || i < n) {
+          indicator.classList.add('completed');
+        } else if (i === n) {
+          indicator.classList.add('active');
+        }
+      }
+
+      const targetSection = document.getElementById(`step${n}`);
+      if (targetSection) targetSection.classList.add('active');
+    }
+
+    function generarGridCartones() {
+  const grid = document.getElementById('gridCartones');
+  grid.innerHTML = '';
+  const fragment = document.createDocumentFragment();
+
+  for (let i = 1; i <= cantidadCartonesDisponibles; i++) {
+    const div = document.createElement('div');
+    div.className = 'carton-item';
+    div.dataset.numero = i;
+    div.textContent = i;
+    fragment.appendChild(div);
+  }
+
+  grid.appendChild(fragment);
+
+  if (!gridCartonesInicializado) {
+    grid.addEventListener('click', (event) => {
+      const item = event.target.closest('.carton-item');
+      if (!item || !grid.contains(item)) return;
+      abrirPreviewCarton(Number(item.dataset.numero));
+    });
+    gridCartonesInicializado = true;
+  }
+}
+
+    async function cargarEstadoCartones() {
+      const { data: ocupados } = await supabaseClient
+        .from('cartones_vendidos')
+        .select('numero_carton');
+
+      cartonesOcupados = new Set((ocupados || []).map(c => Number(c.numero_carton)));
+
+      const cincoMinAtras = new Date(Date.now() - 5 * 60000).toISOString();
+      const { data: apartados } = await supabaseClient
+        .from('cartones_apartados')
+        .select('numero_carton, apartado_id, created_at')
+        .gte('created_at', cincoMinAtras);
+
+      cartonesApartados = new Set();
+      (apartados || []).forEach(a => {
+        const tiempoPasado = (Date.now() - new Date(a.created_at).getTime()) / 1000;
+        const numero = Number(a.numero_carton);
+        if (tiempoPasado < 300 && a.apartado_id !== miApartadoId) {
+          cartonesApartados.add(numero);
+        }
+      });
+
+      actualizarVisualGrid();
+    }
+
+    function actualizarVisualGrid() {
+      document.querySelectorAll('.carton-item').forEach(item => {
+        const num = Number(item.dataset.numero);
+        const ocupado = cartonesOcupados.has(num);
+        const seleccionado = !ocupado && cartonesSeleccionados.has(num);
+        const apartado = !ocupado && !seleccionado && cartonesApartados.has(num);
+        item.classList.toggle('ocupado', ocupado);
+        item.classList.toggle('seleccionado', seleccionado);
+        item.classList.toggle('apartado', apartado);
+      });
+    }
+
+    async function toggleCarton(numero) {
+      if (cartonesOcupados.has(numero)) {
+        alert('Este cartón ya fue comprado');
+        return;
+      }
+
+      if (cartonesApartados.has(numero) && !cartonesSeleccionados.has(numero)) {
+        alert('Este cartón está temporalmente apartado');
+        return;
+      }
+
+      if (cartonesSeleccionados.has(numero)) {
+        cartonesSeleccionados.delete(numero);
+      } else {
+        if (cartonesSeleccionados.size >= datosComprador.cantidad) {
+          alert(`Ya seleccionaste ${datosComprador.cantidad} cartones`);
+          return;
+        }
+        cartonesSeleccionados.add(numero);
+      }
+
+      actualizarVisualGrid();
+      actualizarStats();
+    }
+
+    function generarCartonDesdeNumero(numeroCarton) {
+      let seed = (Number(numeroCarton) * 12345) + (rotacionCartones * 99991);
+      const random = () => {
+        seed = (seed * 9301 + 49297) % 233280;
+        return seed / 233280;
+      };
+
+      const carton = {};
+      Object.keys(RANGOS_CARTON).forEach((letra) => {
+        const [min, max] = RANGOS_CARTON[letra];
+        const nums = new Set();
+        const cantidad = letra === 'N' ? 4 : 5;
+
+        while (nums.size < cantidad) {
+          const num = min + Math.floor(random() * (max - min + 1));
+          nums.add(num);
+        }
+
+        carton[letra] = Array.from(nums).sort((a, b) => a - b);
+      });
+
+      return carton;
+    }
+
+    function obtenerEstadoCartonPreview(numero) {
+      if (cartonesSeleccionados.has(numero)) {
+        return { clase: 'seleccionado', texto: 'Actualmente seleccionado' };
+      }
+
+      if (cartonesOcupados.has(numero)) {
+        return { clase: 'ocupado', texto: 'Ya vendido' };
+      }
+
+      if (cartonesApartados.has(numero)) {
+        return { clase: 'apartado', texto: 'Temporalmente apartado' };
+      }
+
+      return { clase: 'disponible', texto: 'Disponible' };
+    }
+
+    function renderizarPreviewCarton(numero) {
+      const carton = generarCartonDesdeNumero(numero);
+      const grid = document.getElementById('cartonPreviewGrid');
+      const titulo = document.getElementById('cartonPreviewTitulo');
+      const estado = document.getElementById('cartonPreviewEstado');
+      const btn = document.getElementById('btnPreviewSeleccion');
+      const letras = ['B', 'I', 'N', 'G', 'O'];
+
+      titulo.textContent = `Cartón #${String(numero).padStart(4, '0')}`;
+
+      const infoEstado = obtenerEstadoCartonPreview(numero);
+      estado.className = `carton-preview-status ${infoEstado.clase}`;
+      estado.textContent = infoEstado.texto;
+
+      let html = '';
+      letras.forEach(letra => {
+        html += `<div class="carton-preview-cell header">${letra}</div>`;
+      });
+
+      for (let fila = 0; fila < 5; fila++) {
+        for (let col = 0; col < 5; col++) {
+          const letra = letras[col];
+
+          if (letra === 'N' && fila === 2) {
+            html += '<div class="carton-preview-cell free">FREE</div>';
+            continue;
+          }
+
+          const idx = (letra === 'N' && fila > 2) ? fila - 1 : fila;
+          html += `<div class="carton-preview-cell number">${carton[letra][idx]}</div>`;
+        }
+      }
+
+      grid.innerHTML = html;
+
+      if (cartonesOcupados.has(numero)) {
+        btn.disabled = true;
+        btn.textContent = 'Cartón vendido';
+        return;
+      }
+
+      if (cartonesApartados.has(numero) && !cartonesSeleccionados.has(numero)) {
+        btn.disabled = true;
+        btn.textContent = 'Temporalmente apartado';
+        return;
+      }
+
+      if (!datosComprador.cantidad) {
+        btn.disabled = true;
+        btn.textContent = 'Define cantidad primero';
+        return;
+      }
+
+      if (cartonesSeleccionados.has(numero)) {
+        btn.disabled = false;
+        btn.textContent = 'Quitar de la selección';
+        return;
+      }
+
+      if (cartonesSeleccionados.size >= datosComprador.cantidad) {
+        btn.disabled = true;
+        btn.textContent = 'Límite de selección alcanzado';
+        return;
+      }
+
+      btn.disabled = false;
+      btn.textContent = 'Seleccionar este cartón';
+    }
+
+    async function abrirPreviewCarton(numero) {
+      if (!document.getElementById('step3').classList.contains('active')) return;
+
+      cartonPreviewNumero = Number(numero);
+      await cargarEstadoCartones();
+      renderizarPreviewCarton(cartonPreviewNumero);
+      document.getElementById('cartonPreviewModal').classList.add('activo');
+    }
+
+    function cerrarPreviewCarton(event) {
+      if (event && event.target && event.target.id !== 'cartonPreviewModal') return;
+      document.getElementById('cartonPreviewModal').classList.remove('activo');
+      cartonPreviewNumero = null;
+    }
+
+    async function toggleCartonDesdePreview() {
+      if (cartonPreviewNumero === null) return;
+      await toggleCarton(cartonPreviewNumero);
+      renderizarPreviewCarton(cartonPreviewNumero);
+    }
+
+    function actualizarStats() {
+      document.getElementById('statSeleccionados').textContent = cartonesSeleccionados.size;
+      document.getElementById('statRequeridos').textContent = datosComprador.cantidad || 0;
+      document.getElementById('statTotal').textContent = (datosComprador.precio_total || 0).toFixed(2) + ' Bs';
+      document.getElementById('btnConfirmarCartones').disabled =
+        cartonesSeleccionados.size !== (datosComprador.cantidad || 0);
+    }
+
+    async function validarCartonesDisponibles(cartones) {
+      const numeros = cartones.map(Number);
+      if (numeros.length === 0) return [];
+
+      const { data: vendidos, error: vendidosError } = await supabaseClient
+        .from('cartones_vendidos')
+        .select('numero_carton')
+        .in('numero_carton', numeros);
+
+      if (vendidosError) throw vendidosError;
+
+      const cincoMinAtras = new Date(Date.now() - 5 * 60000).toISOString();
+      const { data: apartados, error: apartadosError } = await supabaseClient
+        .from('cartones_apartados')
+        .select('numero_carton, apartado_id, created_at')
+        .in('numero_carton', numeros)
+        .gte('created_at', cincoMinAtras);
+
+      if (apartadosError) throw apartadosError;
+
+      const ocupados = new Set((vendidos || []).map(item => Number(item.numero_carton)));
+
+      (apartados || []).forEach(item => {
+        const vigente = (Date.now() - new Date(item.created_at).getTime()) < 300000;
+        if (vigente && item.apartado_id !== miApartadoId) {
+          ocupados.add(Number(item.numero_carton));
+        }
+      });
+
+      return Array.from(ocupados).sort((a, b) => a - b);
+    }
+
+    async function confirmarSeleccion() {
+      if (procesandoSeleccion) return;
+
+      const cartonesArray = Array.from(cartonesSeleccionados).map(Number).sort((a, b) => a - b);
+
+      if (cartonesArray.length !== datosComprador.cantidad) {
+        alert(`Debes seleccionar exactamente ${datosComprador.cantidad} cartones`);
+        return;
+      }
+
+      procesandoSeleccion = true;
+      const btn = document.getElementById('btnConfirmarCartones');
+      const textoOriginal = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Confirmando...';
+
+      try {
+        const usuario = obtenerUsuarioSesion();
+        if (!usuario) {
+          window.location.href = 'login.html';
+          return;
+        }
+
+        const { data, error } = await supabaseClient.rpc('bingo_reservar_cartones', {
+          p_usuario_id: usuario.id,
+          p_nombre: datosComprador.nombre,
+          p_telefono: datosComprador.telefono,
+          p_cedula: datosComprador.cedula,
+          p_email: datosComprador.email || '',
+          p_cartones: cartonesArray,
+          p_precio_total: datosComprador.precio_total,
+          p_promocion_id: datosComprador.promocion_id || null
+        });
+        if (error) throw error;
+
+        if (!data?.ok) {
+          if (data?.codigo === 'cartones_ocupados') {
+            (data.ocupados || []).forEach(num => cartonesSeleccionados.delete(num));
+            await cargarEstadoCartones();
+            actualizarVisualGrid();
+            actualizarStats();
+            alert('Estos cartones ya no están disponibles: ' + (data.ocupados || []).join(', '));
+            return;
+          }
+
+          throw new Error(data?.codigo || 'No se pudo reservar');
+        }
+
+        miApartadoId = data.apartado_id;
+        pagoEnviado = false;
+        cartonesArray.forEach(num => cartonesApartados.delete(num));
+        actualizarVisualGrid();
+        iniciarTimerApartado();
+        cambiarPaso(4);
+        await actualizarEstadoPagoConSaldo();
+      } catch (error) {
+        alert('Error al apartar: ' + error.message);
+      } finally {
+        procesandoSeleccion = false;
+        btn.textContent = textoOriginal;
+        actualizarStats();
+      }
+    }
+
+    function iniciarTimerApartado() {
+      clearInterval(timerApartado);
+      document.getElementById('apartadoBanner').classList.add('activo');
+      tiempoRestante = 300;
+      document.getElementById('timerApartado').textContent = '05:00';
+
+      timerApartado = setInterval(async () => {
+        tiempoRestante--;
+
+        const mins = Math.floor(tiempoRestante / 60);
+        const secs = tiempoRestante % 60;
+        document.getElementById('timerApartado').textContent =
+          `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+        if (tiempoRestante <= 0) {
+          clearInterval(timerApartado);
+          await liberarApartados({ mantenerSeleccion: false });
+          alert('⏰ Tiempo agotado. Cartones liberados.');
+          location.reload();
+        }
+      }, 1000);
+    }
+
+    async function liberarApartados({ mantenerSeleccion = true } = {}) {
+      if (!miApartadoId) return;
+
+      const apartadoId = miApartadoId;
+      miApartadoId = null;
+      clearInterval(timerApartado);
+      timerApartado = null;
+      document.getElementById('apartadoBanner').classList.remove('activo');
+
+      try {
+        const { error } = await supabaseClient.rpc('bingo_liberar_reserva', {
+          p_apartado_id: apartadoId
+        });
+        if (error) throw error;
+      } catch (error) {
+        console.error('Error liberando apartados:', error);
+      }
+
+      if (!mantenerSeleccion) {
+        cartonesSeleccionados.clear();
+      }
+
+      await cargarEstadoCartones();
+      actualizarStats();
+    }
+
+    function iniciarSuscripcionTiempoReal() {
+      suscripcionTiempoReal = supabaseClient
+        .channel('cartones-tiempo-real')
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'cartones_apartados' },
+          (payload) => {
+            const numero = Number(payload.new.numero_carton);
+            if (payload.new.apartado_id !== miApartadoId && !cartonesSeleccionados.has(numero)) {
+              cartonesApartados.add(numero);
+              actualizarVisualGrid();
+            }
+          }
+        )
+        .on('postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'cartones_apartados' },
+          (payload) => {
+            cartonesApartados.delete(Number(payload.old.numero_carton));
+            actualizarVisualGrid();
+          }
+        )
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'cartones_vendidos' },
+          (payload) => {
+            cartonesOcupados.add(Number(payload.new.numero_carton));
+            cartonesApartados.delete(Number(payload.new.numero_carton));
+            cartonesSeleccionados.delete(Number(payload.new.numero_carton));
+            actualizarVisualGrid();
+            actualizarStats();
+          }
+        )
+        .on('postgres_changes',
+          { event: 'DELETE', schema: 'public', table: 'cartones_vendidos' },
+          (payload) => {
+            cartonesOcupados.delete(Number(payload.old.numero_carton));
+            actualizarVisualGrid();
+            actualizarStats();
+          }
+        )
+        .subscribe();
+    }
+
+    function mostrarPreview(input) {
+      if (input.files && input.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          document.getElementById('previewComprobante').innerHTML =
+            `<img src="${e.target.result}" style="max-width: 300px; border-radius: 10px; border: 2px solid var(--primary);">`;
+          document.getElementById('fileLabel').textContent = '📷 Cambiar imagen';
+        };
+        reader.readAsDataURL(input.files[0]);
+      } else {
+        document.getElementById('previewComprobante').innerHTML = '';
+        document.getElementById('fileLabel').textContent = '📷 Subir captura del pago';
+      }
+    }
+
+    async function enviarPago() {
+      if (!miApartadoId) {
+        alert('Primero confirma la selección de tus cartones');
+        return;
+      }
+
+      const file = document.getElementById('comprobantePago').files[0];
+      const referencia = document.getElementById('referenciaPago').value.trim();
+
+      if (!file) {
+        alert('Sube el comprobante');
+        return;
+      }
+
+      const tiposPermitidos = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+      if (!tiposPermitidos.includes(file.type)) {
+        alert('Solo imágenes (JPG, PNG, WEBP)');
+        return;
+      }
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert('Máximo 5MB');
+        return;
+      }
+
+      if (!/^\d{4}$/.test(referencia)) {
+        alert('Ingresa 4 dígitos de referencia');
+        return;
+      }
+
+      const btn = document.getElementById('btnEnviarPago');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      try {
+        const fileExt = (file.name.split('.').pop() || 'jpg').toLowerCase();
+        const fileName = `comprobante_${miApartadoId}_${Date.now()}.${fileExt}`;
+
+        const { error: uploadError } = await supabaseClient.storage
+          .from('comprobantes')
+          .upload(fileName, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: { publicUrl } } = supabaseClient
+          .storage
+          .from('comprobantes')
+          .getPublicUrl(fileName);
+
+        const { error: updateError } = await supabaseClient.rpc('bingo_registrar_comprobante', {
+          p_apartado_id: miApartadoId,
+          p_comprobante_url: publicUrl,
+          p_referencia_pago: referencia
+        });
+
+        if (updateError) throw updateError;
+
+        clearInterval(timerApartado);
+        timerApartado = null;
+        document.getElementById('apartadoBanner').classList.remove('activo');
+        pagoEnviado = true;
+
+        const cartonesArray = Array.from(cartonesSeleccionados).map(Number).sort((a, b) => a - b);
+        sessionStorage.setItem('modoJuego', 'solo-comprados');
+        sessionStorage.setItem('cartonesComprados', JSON.stringify(cartonesArray));
+        sessionStorage.setItem('cedulaComprador', datosComprador.cedula);
+        sessionStorage.setItem('nombreComprador', datosComprador.nombre);
+
+        miApartadoId = null;
+        mostrarConfirmacionFinal(cartonesArray);
+      } catch (error) {
+        alert('Error: ' + error.message);
+        btn.disabled = false;
+        btn.textContent = '✅ Enviar Comprobante';
+      }
+    }
+
+    function mostrarConfirmacionFinal(cartones) {
+      const step5 = document.getElementById('step5');
+      step5.innerHTML = `
+        <div style="text-align: center; padding: 50px;">
+          <div style="font-size: 5em; margin-bottom: 20px;">✅</div>
+          <h2 style="color: var(--success); margin-bottom: 20px;">¡Compra enviada!</h2>
+
+          <div style="background: rgba(0,0,0,0.3); padding: 25px; border-radius: 15px; margin: 30px 0;">
+            <p style="font-size: 1.2em; margin-bottom: 15px;">
+              Tus cartones: <span style="color: var(--primary); font-weight: bold;">${cartones.join(', ')}</span>
+            </p>
+            <p style="margin-bottom: 10px; color: rgba(255,255,255,0.8);">
+              Cédula para entrar al juego: <span style="color: var(--secondary); font-weight: bold;">${datosComprador.cedula}</span>
+            </p>
+            <p style="color: rgba(255,255,255,0.7); font-size: 0.95em;">
+              Estado actual: <span style="color: var(--warning);">⏳ Pendiente de verificación</span>
+            </p>
+          </div>
+
+          <div style="margin: 40px 0;">
+            <p style="margin-bottom: 20px; color: var(--secondary); font-size: 1.2em;">
+              Cuando el administrador apruebe la compra, entra a la sala con esa cédula.
+            </p>
+            <a href="automatico.html" class="btn-principal" style="text-decoration: none; display: inline-block;">
+              🚀 ENTRAR A LA SALA
+            </a>
+          </div>
+
+          <div style="margin-top: 30px;">
+            <button class="btn-secundario" onclick="location.reload()">
+              🏠 Comprar más cartones
+            </button>
+          </div>
+        </div>
+      `;
+
+      cambiarPaso(5);
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        cerrarPreviewCarton();
+      }
+    });
+
+  window.addEventListener('beforeunload', () => {
+  if (suscripcionTiempoReal) {
+    try { suscripcionTiempoReal.unsubscribe(); } catch (_) {}
+  }
+
+  const step4 = document.getElementById('step4');
+  const estaEnPaso4 = step4 ? step4.classList.contains('active') : false;
+
+  if (miApartadoId && estaEnPaso4 && !pagoEnviado) {
+    liberarApartados({ mantenerSeleccion: false });
+  }
+});
+    
+    init();
+  </script>
+</body>
+</html>
