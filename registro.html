@@ -129,24 +129,26 @@
     .mensaje.error { color: var(--danger); }
     .mensaje.ok { color: var(--success); }
 
-    .mi-cuenta-flotante {
-      position: fixed; top: 42%; right: 16px; z-index: 12000;
-      transform: translateY(-50%);
+    .mi-cuenta-zona {
+      display: flex;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .mi-cuenta-enlace {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 11px 17px; border-radius: 999px;
       background: linear-gradient(135deg, #FFA500, #ff6b35);
       color: #fff; text-decoration: none; font-weight: 800;
       box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      transition: transform .2s ease, box-shadow .2s ease;
     }
-    .mi-cuenta-flotante:hover { transform: translateY(calc(-50% - 2px)); }
-    @media (max-width: 600px) { .mi-cuenta-flotante { right: 10px; padding: 9px 13px; font-size: .9em; } }
+    .mi-cuenta-enlace:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,.4); }
+    @media (max-width: 600px) { .mi-cuenta-enlace { padding: 9px 13px; font-size: .9em; } }
 
   </style>
 </head>
 
 <body>
-<a class="mi-cuenta-flotante" href="cuenta.html" target="_self">👤 Mi cuenta</a>
-
 <div class="container">
   <div class="card">
 
@@ -183,6 +185,10 @@
 
     <div class="link">
       ¿Ya tienes cuenta? <a href="login.html">Iniciar sesión</a>
+    </div>
+
+    <div class="mi-cuenta-zona">
+      <a class="mi-cuenta-enlace" href="cuenta.html" target="_self">👤 Mi cuenta</a>
     </div>
 
   </div>
