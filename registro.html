@@ -130,15 +130,16 @@
     .mensaje.ok { color: var(--success); }
 
     .mi-cuenta-flotante {
-      position: fixed; top: 16px; right: 16px; z-index: 12000;
+      position: fixed; top: 42%; right: 16px; z-index: 12000;
+      transform: translateY(-50%);
       display: inline-flex; align-items: center; gap: 8px;
       padding: 11px 17px; border-radius: 999px;
       background: linear-gradient(135deg, #FFA500, #ff6b35);
       color: #fff; text-decoration: none; font-weight: 800;
       box-shadow: 0 8px 24px rgba(0,0,0,.35);
     }
-    .mi-cuenta-flotante:hover { transform: translateY(-2px); }
-    @media (max-width: 600px) { .mi-cuenta-flotante { top: 10px; right: 10px; padding: 9px 13px; font-size: .9em; } }
+    .mi-cuenta-flotante:hover { transform: translateY(calc(-50% - 2px)); }
+    @media (max-width: 600px) { .mi-cuenta-flotante { right: 10px; padding: 9px 13px; font-size: .9em; } }
 
   </style>
 </head>
@@ -258,4 +259,3 @@ async function registrar() {
 
 </body>
 </html>
-
