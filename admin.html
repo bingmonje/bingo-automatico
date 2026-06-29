@@ -139,6 +139,18 @@
       color: var(--primary);
     }
 
+    .nav-count {
+      margin-left: auto;
+      min-width: 27px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: var(--danger);
+      color: white;
+      text-align: center;
+      font-size: 0.78em;
+      font-weight: 800;
+    }
+
     .main-content {
       margin-left: 280px;
       padding: 30px;
@@ -577,13 +589,13 @@
   <span>🏆</span> Historial Ganadores
 </div>
         <div class="nav-item" onclick="showSection('ventas', this)">
-          <span>🛒</span> Compras Pendientes
+          <span>🛒</span> Compras Pendientes <span id="badgeCompras" class="nav-count">0</span>
         </div>
         <div class="nav-item" onclick="showSection('recargas', this)">
-  <span>💳</span> Recargas
+  <span>💳</span> Recargas <span id="badgeRecargas" class="nav-count">0</span>
 </div>
         <div class="nav-item" onclick="showSection('retiros', this)">
-  <span>🏧</span> Retiros
+  <span>🏧</span> Retiros <span id="badgeRetiros" class="nav-count">0</span>
 </div>
         <div class="nav-item" onclick="showSection('promos', this)">
           <span>🏷️</span> Promociones
@@ -908,6 +920,8 @@
     let gameTimerInterval = null;
     let programacionTimer = null;
     let cicloAutomaticoActivo = false;
+    let minimoCartonesInicio = 15;
+    let cartonesVendidosProgramacion = 0;
     let isProcessingBall = false;
     let adminLiveSubscription = null;
     let adminVentasTimer = null;
@@ -920,6 +934,26 @@
         [array[i], array[j]] = [array[j], array[i]];
       }
       return array;
+    }
+
+    function pintarContadorPendiente(id, cantidad) {
+      const badge = document.getElementById(id);
+      if (!badge) return;
+      badge.textContent = String(Number(cantidad || 0));
+      badge.style.background = Number(cantidad || 0) > 0 ? 'var(--danger)' : 'rgba(255,255,255,0.18)';
+    }
+
+    async function actualizarContadoresPendientes() {
+      const consultas = await Promise.all([
+        supabaseClient.from('apartados_temp').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+        supabaseClient.from('recargas_bingo').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+        supabaseClient.from('retiros_bingo').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente')
+      ]);
+
+      const [compras, recargas, retiros] = consultas;
+      if (!compras.error) pintarContadorPendiente('badgeCompras', compras.count);
+      if (!recargas.error) pintarContadorPendiente('badgeRecargas', recargas.count);
+      if (!retiros.error) pintarContadorPendiente('badgeRetiros', retiros.count);
     }
     async function cargarRecargasPendientes() {
   const contenedor = document.getElementById('listaRecargas');
@@ -947,11 +981,14 @@
 
   if (!data.length) {
     contenedor.innerHTML = 'No hay recargas pendientes';
+    pintarContadorPendiente('badgeRecargas', 0);
     return;
   }
 
+  pintarContadorPendiente('badgeRecargas', data.length);
+
   contenedor.innerHTML = data.map(r => `
-    <div class="card-recarga">
+    <div class="card-recarga" id="recarga-${r.id}">
       <p><strong>${r.usuarios_bingo?.nombre}</strong></p>
       <p>Cédula: ${r.usuarios_bingo?.cedula}</p>
       <p>Monto: ${Number(r.monto).toFixed(2)} Bs</p>
@@ -992,11 +1029,14 @@
 
   if (!data.length) {
     contenedor.innerHTML = 'No hay retiros pendientes';
+    pintarContadorPendiente('badgeRetiros', 0);
     return;
   }
 
+  pintarContadorPendiente('badgeRetiros', data.length);
+
   contenedor.innerHTML = data.map(r => `
-    <div class="card-recarga">
+    <div class="card-recarga" id="retiro-${r.id}">
       <p><strong>${r.usuarios_bingo?.nombre}</strong></p>
       <p>Cédula: ${r.usuarios_bingo?.cedula}</p>
       <p>Monto: ${Number(r.monto).toFixed(2)} Bs</p>
@@ -1025,8 +1065,9 @@
     return;
   }
 
+  document.getElementById(`retiro-${id}`)?.remove();
+  await Promise.all([cargarRetirosPendientes(), actualizarContadoresPendientes()]);
   alert('Retiro aprobado');
-  cargarRetirosPendientes();
 }
     
     async function rechazarRetiro(id) {
@@ -1039,8 +1080,9 @@
     return;
   }
 
+  document.getElementById(`retiro-${id}`)?.remove();
+  await Promise.all([cargarRetirosPendientes(), actualizarContadoresPendientes()]);
   alert('Retiro rechazado');
-  cargarRetirosPendientes();
 }
     
     async function aprobarRecarga(recargaId) {
@@ -1053,9 +1095,9 @@
     return;
   }
 
+  document.getElementById(`recarga-${recargaId}`)?.remove();
+  await Promise.all([cargarRecargasPendientes(), actualizarContadoresPendientes()]);
   alert('Recarga aprobada correctamente');
-
-  cargarRecargasPendientes();
 }
     async function rechazarRecarga(recargaId) {
   const { error } = await supabaseClient.rpc('bingo_admin_rechazar_recarga', {
@@ -1067,8 +1109,9 @@
     return;
   }
 
+  document.getElementById(`recarga-${recargaId}`)?.remove();
+  await Promise.all([cargarRecargasPendientes(), actualizarContadoresPendientes()]);
   alert('Recarga rechazada');
-  cargarRecargasPendientes();
 }
 
     function login() {
@@ -1124,7 +1167,8 @@
         updateApprovedPlayersCount(),
         updateApprovedRevenueStats(),
         cargarAjustes(),
-        cargarProgramacionAutomatica()
+        cargarProgramacionAutomatica(),
+        actualizarContadoresPendientes()
       ]);
       setupSubscriptions();
     }
@@ -1374,6 +1418,7 @@ if (payload.new?.ganador_id && !payload.old?.ganador_id) {
           () => {
             programarCargaVentasAdmin();
             programarRevenueAdmin();
+            actualizarContadoresPendientes();
           }
         )
         .on('postgres_changes',
@@ -1381,6 +1426,24 @@ if (payload.new?.ganador_id && !payload.old?.ganador_id) {
           () => {
             programarPlayersAdmin();
             programarRevenueAdmin();
+          }
+        )
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'recargas_bingo' },
+          async () => {
+            await actualizarContadoresPendientes();
+            if (document.getElementById('sec-recargas').classList.contains('active')) {
+              await cargarRecargasPendientes();
+            }
+          }
+        )
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'retiros_bingo' },
+          async () => {
+            await actualizarContadoresPendientes();
+            if (document.getElementById('sec-retiros').classList.contains('active')) {
+              await cargarRetirosPendientes();
+            }
           }
         )
         .subscribe();
@@ -1405,9 +1468,13 @@ mostrando = false;
       }
 
       if (!data?.ok) {
-        alert(data?.codigo === 'juego_ya_activo'
-          ? 'Ya existe un juego activo.'
-          : 'No se pudo iniciar el juego.');
+        if (data?.codigo === 'juego_ya_activo') {
+          alert('Ya existe un juego activo.');
+        } else if (data?.codigo === 'cartones_insuficientes') {
+          alert(`Faltan ${Number(data.faltantes || 0)} cartón(es). El juego requiere mínimo ${Number(data.minimo_cartones || 15)} cartones aprobados.`);
+        } else {
+          alert('No se pudo iniciar el juego.');
+        }
         return;
       }
 
@@ -1500,7 +1567,8 @@ mostrando = false;
       await Promise.all([
         cargarVentas(),
         updateApprovedPlayersCount(),
-        updateApprovedRevenueStats()
+        updateApprovedRevenueStats(),
+        actualizarContadoresPendientes()
       ]);
 
       let mensaje = `${aprobadas} compra(s) aprobada(s).`;
@@ -1666,6 +1734,7 @@ mostrando = false;
       }
 
       document.getElementById('autoPlayers').textContent = Number(data?.jugadores || 0);
+      cartonesVendidosProgramacion = Number(data?.cartones || 0);
     }
 
     function formatearBs(valor) {
@@ -1908,7 +1977,8 @@ async function eliminarPromo(id) {
       await Promise.all([
         cargarVentas(),
         updateApprovedPlayersCount(),
-        updateApprovedRevenueStats()
+        updateApprovedRevenueStats(),
+        actualizarContadoresPendientes()
       ]);
 
       alert('Compra aprobada exitosamente');
@@ -1929,7 +1999,8 @@ async function eliminarPromo(id) {
       await Promise.all([
         cargarVentas(),
         updateApprovedPlayersCount(),
-        updateApprovedRevenueStats()
+        updateApprovedRevenueStats(),
+        actualizarContadoresPendientes()
       ]);
 
       alert('Cartones liberados correctamente');
@@ -1958,7 +2029,10 @@ function actualizarCuentaProgramacionAdmin(juego = currentGame) {
     }
 
     if (juego?.estado === 'esperando' && juego.proximo_juego_en) {
-      estado.textContent = `⏳ Próximo juego empieza en ${formatearCuentaRegresivaAdmin(juego.proximo_juego_en)} · ventas abiertas`;
+      const faltantes = Math.max(0, minimoCartonesInicio - cartonesVendidosProgramacion);
+      estado.textContent = faltantes > 0
+        ? `⏳ Próxima revisión en ${formatearCuentaRegresivaAdmin(juego.proximo_juego_en)} · ${cartonesVendidosProgramacion}/${minimoCartonesInicio} cartones · faltan ${faltantes}`
+        : `✅ Mínimo alcanzado (${cartonesVendidosProgramacion}/${minimoCartonesInicio}) · el juego empieza en ${formatearCuentaRegresivaAdmin(juego.proximo_juego_en)}`;
       return;
     }
 
@@ -1975,7 +2049,7 @@ async function cargarProgramacionAutomatica() {
   const { data, error } = await supabaseClient
     .from('config_bingo_auto')
     .select('clave, valor')
-    .in('clave', ['ciclo_automatico', 'minutos_entre_juegos', 'tiempo_auto']);
+    .in('clave', ['ciclo_automatico', 'minutos_entre_juegos', 'tiempo_auto', 'min_cartones_inicio']);
 
   if (error) {
     console.error('Error cargando programación automática:', error);
@@ -1984,6 +2058,7 @@ async function cargarProgramacionAutomatica() {
 
   const mapa = Object.fromEntries((data || []).map(item => [item.clave, item.valor]));
   cicloAutomaticoActivo = mapa.ciclo_automatico === 'true';
+  minimoCartonesInicio = parseInt(mapa.min_cartones_inicio || '15', 10) || 15;
 
   const minutosInput = document.getElementById('minutosEntreJuegosInput');
   const segundosInput = document.getElementById('segundosEntreBolasInput');
