@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Registro - Bingo Andino 75</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #FFA500;
+      --secondary: #f9d949;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --dark: #1a1a2e;
+      --darker: #0f0f1a;
+      --card-bg: rgba(255, 255, 255, 0.05);
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, var(--dark), var(--darker));
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 520px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 2px solid var(--primary);
+      border-radius: 28px;
+      padding: 40px 30px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+    }
+
+    .logo h1 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary);
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+
+    .logo p {
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 20px;
+    }
+
+    .title {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--secondary);
+      margin-bottom: 25px;
+      font-size: 1.2em;
+    }
+
+    .input-group {
+      text-align: left;
+      margin-bottom: 15px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 6px;
+      color: var(--secondary);
+      font-size: 0.9em;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 14px;
+      border-radius: 12px;
+      border: 2px solid rgba(255,165,0,0.3);
+      background: rgba(0,0,0,0.3);
+      color: white;
+      font-size: 1em;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 12px rgba(255,165,0,0.2);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 50px;
+      border: none;
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 10px;
+      font-size: 1em;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .link {
+      margin-top: 20px;
+      font-size: 0.9em;
+      color: rgba(255,255,255,0.7);
+    }
+
+    .link a {
+      color: var(--secondary);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .mensaje {
+      margin-top: 10px;
+      font-weight: bold;
+    }
+
+    .mensaje.error { color: var(--danger); }
+    .mensaje.ok { color: var(--success); }
+
+  </style>
+</head>
+
+<body>
+
+<div class="container">
+  <div class="card">
+
+    <div class="logo">
+      <h1>🎱 BINGO ANDINO 75</h1>
+      <p>Crea tu cuenta para jugar</p>
+    </div>
+
+    <div class="title">📝 Registro</div>
+
+    <div class="input-group">
+      <label>Nombre</label>
+      <input type="text" id="nombre" placeholder="Tu nombre">
+    </div>
+
+    <div class="input-group">
+      <label>Teléfono</label>
+      <input type="text" id="telefono" placeholder="Ej: 0414...">
+    </div>
+
+    <div class="input-group">
+      <label>Cédula</label>
+      <input type="text" id="cedula" placeholder="Ej: V-12345678">
+    </div>
+
+    <div class="input-group">
+      <label>PIN</label>
+      <input type="password" id="pin" placeholder="Crea un PIN">
+    </div>
+
+    <button class="btn" onclick="registrar()">Crear cuenta</button>
+
+    <p id="mensaje" class="mensaje"></p>
+
+    <div class="link">
+      ¿Ya tienes cuenta? <a href="login.html">Iniciar sesión</a>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const supabaseClient = supabase.createClient(
+  'https://okwkwgrecwxydjcezcdn.supabase.co',
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ'
+);
+
+function normalizarCedula(valor) {
+  return valor.trim().toUpperCase().replace(/\s+/g, '');
+}
+
+async function generarPinHash(pin) {
+  if (!window.crypto?.subtle) return pin;
+  const data = new TextEncoder().encode(pin);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(byte => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+async function registrar() {
+  const nombre = document.getElementById('nombre').value.trim();
+  const telefono = document.getElementById('telefono').value.trim();
+  const cedula = normalizarCedula(document.getElementById('cedula').value);
+  const pin = document.getElementById('pin').value;
+  const mensaje = document.getElementById('mensaje');
+
+  mensaje.textContent = '';
+  mensaje.className = 'mensaje';
+
+  if (!nombre || !telefono || !cedula || !pin) {
+    mensaje.textContent = 'Completa todos los campos';
+    mensaje.classList.add('error');
+    return;
+  }
+
+  const pinHash = await generarPinHash(pin);
+  const { data, error } = await supabaseClient.rpc('bingo_registrar_usuario', {
+    p_cedula: cedula,
+    p_nombre: nombre,
+    p_telefono: telefono,
+    p_email: '',
+    p_pin_hash: pinHash
+  });
+
+  if (error) {
+    mensaje.textContent = error.message;
+    mensaje.classList.add('error');
+    return;
+  }
+
+  if (!data?.ok) {
+    mensaje.textContent = data?.codigo === 'cedula_registrada'
+      ? 'Ya existe una cuenta con esa cédula'
+      : 'No se pudo crear la cuenta';
+    mensaje.classList.add('error');
+    return;
+  }
+
+  mensaje.textContent = 'Cuenta creada correctamente 🎉';
+  mensaje.classList.add('ok');
+
+  setTimeout(() => {
+    window.location.href = 'login.html';
+  }, 800);
+}
+</script>
+
+</body>
+</html>
