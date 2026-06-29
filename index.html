@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🎱 Bingo Andino 75</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --primary: #FFA500;
+      --secondary: #f9d949;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --dark: #1a1a2e;
+      --darker: #0f0f1a;
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+      min-height: 100vh;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1000px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .logo {
+      margin-bottom: 50px;
+    }
+
+    .logo h1 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 4em;
+      color: var(--primary);
+      text-shadow: 0 0 30px rgba(255,165,0,0.5);
+      margin-bottom: 10px;
+      animation: glow 2s ease-in-out infinite alternate;
+    }
+
+    @keyframes glow {
+      from { text-shadow: 0 0 30px rgba(255,165,0,0.5); }
+      to { text-shadow: 0 0 50px rgba(255,165,0,0.8), 0 0 60px rgba(255,165,0,0.4); }
+    }
+
+    .logo p {
+      font-size: 1.3em;
+      color: rgba(255,255,255,0.8);
+    }
+
+    .opciones {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 30px;
+      margin: 50px 0;
+    }
+
+    .btn-opcion {
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,165,0,0.3);
+      border-radius: 25px;
+      padding: 40px 30px;
+      text-decoration: none;
+      color: white;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      display: block;
+    }
+
+    .btn-opcion::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,165,0,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .btn-opcion:hover::before {
+      left: 100%;
+    }
+
+    .btn-opcion:hover {
+      border-color: var(--primary);
+      transform: translateY(-5px);
+      box-shadow: 0 20px 40px rgba(255,165,0,0.3);
+    }
+
+    .btn-opcion h2 {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 1.8em;
+      color: var(--primary);
+      margin-bottom: 15px;
+    }
+
+    .btn-opcion p {
+      color: rgba(255,255,255,0.7);
+      line-height: 1.6;
+    }
+
+    .icono {
+      font-size: 4em;
+      margin-bottom: 20px;
+    }
+
+    .info-section {
+      background: rgba(255,255,255,0.03);
+      border-radius: 20px;
+      padding: 30px;
+      margin: 40px 0;
+      border: 1px solid rgba(255,165,0,0.2);
+    }
+
+    .info-section h3 {
+      color: var(--secondary);
+      margin-bottom: 20px;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+    }
+
+    .info-item {
+      padding: 20px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 15px;
+    }
+
+    .info-item strong {
+      display: block;
+      color: var(--primary);
+      font-size: 1.5em;
+      margin-bottom: 5px;
+      font-family: 'Orbitron', sans-serif;
+    }
+
+    .admin-link {
+      margin-top: 40px;
+      padding: 20px;
+    }
+
+    .admin-link a {
+      color: rgba(255,255,255,0.4);
+      text-decoration: none;
+      font-size: 0.9em;
+      transition: color 0.3s;
+    }
+
+    .admin-link a:hover {
+      color: var(--primary);
+    }
+
+    footer {
+      margin-top: 50px;
+      padding: 20px;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.9em;
+    }
+
+    /* Banner de juego */
+    .banner-juego {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: linear-gradient(90deg, var(--success), #2ecc71);
+      color: white;
+      padding: 15px;
+      text-align: center;
+      z-index: 10000;
+      font-weight: bold;
+      animation: slideDown 0.5s ease;
+      display: none;
+    }
+
+    .banner-juego.activo {
+      display: block;
+    }
+
+    @keyframes slideDown {
+      from { transform: translateY(-100%); }
+      to { transform: translateY(0); }
+    }
+
+    .banner-juego a {
+      color: #000;
+      background: white;
+      padding: 5px 15px;
+      border-radius: 20px;
+      margin-left: 10px;
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .banner-juego button {
+      margin-left: 20px;
+      background: none;
+      border: none;
+      color: white;
+      cursor: pointer;
+      font-size: 1.2em;
+    }
+
+    .estado-pendiente {
+      color: var(--warning);
+      font-size: 0.9em;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .logo h1 { font-size: 2.5em; }
+      .btn-opcion { padding: 30px 20px; }
+      .btn-opcion h2 { font-size: 1.4em; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Banner de juego -->
+  <div id="bannerJuego" class="banner-juego">
+    🎉 ¡Tienes cartones comprados! 
+    <a href="automatico.html">JUGAR AHORA →</a>
+    <button onclick="cerrarBanner()">×</button>
+  </div>
+
+  <div class="container">
+    
+    <div class="logo">
+      <h1>🎱 BINGO ANDINO 75</h1>
+      <p>El mejor bingo online de Venezuela</p>
+    </div>
+
+    <div class="opciones">
+      <a href="cuenta.html" class="btn-opcion" id="btnBilletera">
+        <div class="icono">💼</div>
+        <h2>1. RECARGAR CUENTA</h2>
+        <p>Consulta tu saldo, solicita recargas y administra tu cuenta de juego antes de escoger cartones.</p>
+        <div id="estadoBilletera" class="estado-pendiente" style="display: none;"></div>
+      </a>
+
+      <a href="comprar-cartones.html" class="btn-opcion">
+        <div class="icono">🛒</div>
+        <h2>2. ESCOGER CARTONES</h2>
+        <p>Elige tus cartones del 1 al 1000, paga con saldo o envia comprobante para aprobacion.</p>
+      </a>
+
+      <a href="automatico.html" class="btn-opcion" id="btnAutomatico">
+        <div class="icono">🎮</div>
+        <h2 id="tituloAuto">3. IR A LA SALA</h2>
+        <p id="descAuto">Entra con tus cartones aprobados y sigue las bolas en tiempo real.</p>
+        <div id="estadoAuto" class="estado-pendiente" style="display: none;"></div>
+      </a>
+
+    </div>
+
+    <div class="info-section">
+      <h3>📋 ¿Cómo funciona?</h3>
+      <div class="info-grid">
+        <div class="info-item">
+          <strong>1</strong>
+          Inicia sesión
+        </div>
+        <div class="info-item">
+          <strong>2</strong>
+          Recarga tu cuenta
+        </div>
+        <div class="info-item">
+          <strong>3</strong>
+          Escoge tus cartones
+        </div>
+        <div class="info-item">
+          <strong>4</strong>
+          Entra a la sala
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-link">
+      <a href="admin.html">🎛️ Panel de Administración</a>
+    </div>
+
+    <footer>
+      <p>© 2024 Bingo Andino 75 - Todos los derechos reservados</p>
+      <p style="margin-top: 10px;">Juega responsablemente</p>
+    </footer>
+
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function generarVariantesCedula(valor) {
+      const limpio = (valor || '').trim().toUpperCase().replace(/\s+/g, '');
+      const digitos = limpio.replace(/\D/g, '');
+      const variantes = new Set();
+      if (limpio) variantes.add(limpio);
+      if (digitos) {
+        variantes.add(digitos);
+        variantes.add(`V-${digitos}`);
+        variantes.add(`V${digitos}`);
+        variantes.add(`E-${digitos}`);
+        variantes.add(`E${digitos}`);
+      }
+      return Array.from(variantes);
+    }
+
+    async function verificarEstadoCompra() {
+      const cartones = sessionStorage.getItem('cartonesComprados');
+      const cedula = sessionStorage.getItem('cedulaComprador');
+
+      if (!cedula || !cartones) {
+        limpiarSession();
+        return;
+      }
+
+      try {
+        const variantes = generarVariantesCedula(cedula);
+
+        const { data: vendidos, error } = await supabaseClient
+          .from('cartones_vendidos')
+          .select('numero_carton')
+          .in('cedula', variantes)
+          .order('numero_carton', { ascending: true });
+
+        if (error) throw error;
+
+        if (vendidos && vendidos.length > 0) {
+          mostrarBanner(vendidos.map(v => v.numero_carton), true);
+          return;
+        }
+
+        const { data: pendientes } = await supabaseClient
+          .from('apartados_temp')
+          .select('estado')
+          .in('cedula', variantes)
+          .in('estado', ['apartado', 'pendiente'])
+          .order('id', { ascending: false });
+
+        if (pendientes && pendientes.length > 0) {
+          mostrarBanner(JSON.parse(cartones), false);
+        } else {
+          limpiarSession();
+        }
+      } catch (e) {
+        console.error('Error verificando compra:', e);
+        mostrarBanner(JSON.parse(cartones), false);
+      }
+    }
+
+    function mostrarBanner(nums, aprobado) {
+      document.getElementById('bannerJuego').classList.add('activo');
+
+      document.getElementById('tituloAuto').textContent = 'JUGAR CON TUS CARTONES';
+      document.getElementById('descAuto').textContent =
+        `Tienes ${nums.length} cartón(es): ${nums.slice(0, 5).join(', ')}${nums.length > 5 ? '...' : ''}.`;
+
+      const estadoDiv = document.getElementById('estadoAuto');
+      estadoDiv.style.display = 'block';
+      estadoDiv.textContent = aprobado
+        ? '✅ Compra aprobada. Ya puedes entrar a la sala.'
+        : '⏳ Compra pendiente de verificación por el administrador';
+      estadoDiv.style.color = aprobado ? 'var(--success)' : 'var(--warning)';
+    }
+
+    function cerrarBanner() {
+      document.getElementById('bannerJuego').classList.remove('activo');
+    }
+
+    function limpiarSession() {
+      sessionStorage.removeItem('modoJuego');
+      sessionStorage.removeItem('cartonesComprados');
+      sessionStorage.removeItem('cedulaComprador');
+      sessionStorage.removeItem('nombreComprador');
+    }
+    function obtenerUsuarioSesion() {
+  try {
+    return JSON.parse(localStorage.getItem('usuario_bingo'));
+  } catch {
+    return null;
+  }
+}
+
+async function actualizarPanelUsuario() {
+  const usuario = obtenerUsuarioSesion();
+  const btnBilletera = document.getElementById('btnBilletera');
+
+  if (!btnBilletera) return;
+
+  if (usuario) {
+    btnBilletera.style.display = 'block';
+
+    const { data, error } = await supabaseClient
+      .from('billeteras_bingo')
+      .select('saldo')
+      .eq('usuario_id', usuario.id)
+      .maybeSingle();
+
+    const estado = document.getElementById('estadoBilletera');
+    if (estado) {
+      estado.style.display = 'block';
+
+      if (error) {
+        estado.textContent = 'No se pudo cargar el saldo';
+        estado.style.color = 'var(--warning)';
+      } else {
+        const saldo = Number(data?.saldo || 0);
+        estado.textContent = `Saldo disponible: ${saldo.toFixed(2)} Bs`;
+        estado.style.color = 'var(--success)';
+      }
+    }
+  } else {
+    window.location.href = 'login.html';
+  }
+}
+    actualizarPanelUsuario();
+    verificarEstadoCompra();
+  </script>
+
+</body>
+</html>
