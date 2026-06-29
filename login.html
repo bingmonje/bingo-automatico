@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - Bingo Andino 75</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #FFA500;
+      --secondary: #f9d949;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --dark: #1a1a2e;
+      --darker: #0f0f1a;
+      --card-bg: rgba(255, 255, 255, 0.05);
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+      min-height: 100vh;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .login-container {
+      width: 100%;
+      max-width: 500px;
+    }
+
+    .login-card {
+      background: var(--card-bg);
+      border: 2px solid var(--primary);
+      border-radius: 28px;
+      padding: 40px 35px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+      text-align: center;
+    }
+
+    .logo {
+      margin-bottom: 25px;
+    }
+
+    .logo h1 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary);
+      font-size: 2.2em;
+      margin-bottom: 8px;
+      text-shadow: 0 0 20px rgba(255,165,0,0.25);
+    }
+
+    .logo p {
+      color: rgba(255,255,255,0.72);
+      font-size: 1em;
+    }
+
+    .form-title {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--secondary);
+      font-size: 1.3em;
+      margin-bottom: 25px;
+    }
+
+    .input-group {
+      text-align: left;
+      margin-bottom: 18px;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--secondary);
+      font-weight: 500;
+      font-size: 0.95em;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 16px 18px;
+      border: 2px solid rgba(255,165,0,0.25);
+      border-radius: 14px;
+      background: rgba(0,0,0,0.28);
+      color: white;
+      font-size: 1em;
+      transition: all 0.25s ease;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 18px rgba(255,165,0,0.16);
+    }
+
+    .btn-login {
+      width: 100%;
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      color: white;
+      border: none;
+      padding: 16px 20px;
+      font-size: 1.05em;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-top: 10px;
+      box-shadow: 0 12px 25px rgba(255,165,0,0.22);
+    }
+
+    .btn-login:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 30px rgba(255,165,0,0.28);
+    }
+
+    .login-links {
+      margin-top: 22px;
+      color: rgba(255,255,255,0.72);
+      font-size: 0.95em;
+    }
+
+    .login-links a {
+      color: var(--secondary);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    .login-links a:hover {
+      text-decoration: underline;
+    }
+
+    .mensaje-login {
+      min-height: 24px;
+      margin-top: 15px;
+      font-weight: 600;
+      font-size: 0.95em;
+    }
+
+    .mensaje-login.error {
+      color: var(--danger);
+    }
+
+    .mensaje-login.ok {
+      color: var(--success);
+    }
+
+    @media (max-width: 600px) {
+      .login-card {
+        padding: 30px 22px;
+      }
+
+      .logo h1 {
+        font-size: 1.8em;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="login-container">
+    <div class="login-card">
+
+      <div class="logo">
+        <h1>🎱 BINGO ANDINO 75</h1>
+        <p>Accede a tu cuenta para recargar, comprar y jugar.</p>
+      </div>
+
+      <div class="form-title">🔐 Iniciar sesión</div>
+
+      <div class="input-group">
+        <label for="cedula">Cédula</label>
+        <input type="text" id="cedula" placeholder="Ej: V-12345678">
+      </div>
+
+      <div class="input-group">
+        <label for="pin">PIN</label>
+        <input type="password" id="pin" placeholder="Ingresa tu PIN">
+      </div>
+
+      <button class="btn-login" onclick="login()">Entrar</button>
+
+      <p id="mensajeLogin" class="mensaje-login"></p>
+
+      <div class="login-links">
+        ¿No tienes cuenta? <a href="registro.html">Registrarse</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const supabaseClient = supabase.createClient(
+      'https://okwkwgrecwxydjcezcdn.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ'
+    );
+
+    function normalizarCedula(valor) {
+      return valor.trim().toUpperCase().replace(/\s+/g, '');
+    }
+
+    async function generarPinHash(pin) {
+      if (!window.crypto?.subtle) return pin;
+      const data = new TextEncoder().encode(pin);
+      const hash = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hash))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+    }
+
+    async function login() {
+      const cedula = normalizarCedula(document.getElementById('cedula').value);
+      const pin = document.getElementById('pin').value;
+      const mensaje = document.getElementById('mensajeLogin');
+
+      mensaje.textContent = '';
+      mensaje.className = 'mensaje-login';
+
+      if (!cedula || !pin) {
+        mensaje.textContent = 'Completa los campos.';
+        mensaje.classList.add('error');
+        return;
+      }
+
+      const { data, error } = await supabaseClient
+        .from('usuarios_bingo')
+        .select('*')
+        .eq('cedula', cedula)
+        .maybeSingle();
+
+      if (error || !data) {
+        mensaje.textContent = 'Usuario no encontrado.';
+        mensaje.classList.add('error');
+        return;
+      }
+
+      const pinHash = await generarPinHash(pin);
+      if (data.pin_hash !== pinHash && data.pin_hash !== pin) {
+        mensaje.textContent = 'PIN incorrecto.';
+        mensaje.classList.add('error');
+        return;
+      }
+
+      localStorage.setItem('usuario_bingo', JSON.stringify({
+        id: data.id,
+        nombre: data.nombre,
+        cedula: data.cedula,
+        telefono: data.telefono,
+        email: data.email || ''
+      }));
+
+      mensaje.textContent = 'Bienvenido ' + data.nombre;
+      mensaje.classList.add('ok');
+
+      setTimeout(() => {
+        window.location.href = 'cuenta.html';
+      }, 700);
+    }
+
+    document.getElementById('pin').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') login();
+    });
+
+    document.getElementById('cedula').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') login();
+    });
+  </script>
+
+</body>
+</html>
