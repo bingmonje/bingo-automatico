@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="es">
+  
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Cuenta - Bingo Andino 75</title>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #FFA500;
+      --secondary: #f9d949;
+      --success: #27ae60;
+      --danger: #e74c3c;
+      --warning: #f39c12;
+      --dark: #1a1a2e;
+      --darker: #0f0f1a;
+      --card-bg: rgba(255, 255, 255, 0.05);
+    }
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      background: linear-gradient(135deg, var(--dark) 0%, var(--darker) 100%);
+      min-height: 100vh;
+      color: white;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .header {
+      text-align: center;
+      padding: 30px;
+      background: var(--card-bg);
+      border-radius: 20px;
+      margin-bottom: 30px;
+      border: 2px solid var(--primary);
+      box-shadow: 0 15px 40px rgba(0,0,0,0.25);
+    }
+
+    .header h1 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--primary);
+      font-size: 2.4em;
+      margin-bottom: 10px;
+      text-shadow: 0 0 20px rgba(255,165,0,0.25);
+    }
+
+    .header p {
+      color: rgba(255,255,255,0.72);
+      font-size: 1.05em;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border: 1px solid rgba(255,165,0,0.22);
+      border-radius: 24px;
+      padding: 30px;
+      margin-bottom: 25px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.18);
+    }
+
+    .card h2 {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--secondary);
+      font-size: 1.35em;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .cuenta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 18px;
+    }
+
+    .dato-box {
+      background: rgba(0,0,0,0.22);
+      border-radius: 18px;
+      padding: 20px;
+      border-left: 4px solid var(--primary);
+    }
+
+    .dato-label {
+      display: block;
+      color: rgba(255,255,255,0.65);
+      font-size: 0.9em;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+    }
+
+    .dato-value {
+      font-size: 1.1em;
+      font-weight: 700;
+      color: white;
+      word-break: break-word;
+    }
+
+    .saldo-box {
+      text-align: center;
+      background: linear-gradient(135deg, rgba(255,165,0,0.18), rgba(255,107,53,0.12));
+      border: 2px solid rgba(255,165,0,0.35);
+    }
+
+    .saldo-box .dato-label {
+      color: rgba(255,255,255,0.8);
+    }
+
+    .saldo-box .dato-value {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 2em;
+      color: var(--secondary);
+      text-shadow: 0 0 12px rgba(249,217,73,0.15);
+    }
+
+    .form-grid {
+      display: grid;
+      gap: 18px;
+      max-width: 520px;
+      margin: 0 auto;
+    }
+
+    .input-group {
+      text-align: left;
+    }
+
+    .input-group label {
+      display: block;
+      margin-bottom: 8px;
+      color: var(--secondary);
+      font-weight: 500;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 16px 18px;
+      border: 2px solid rgba(255,165,0,0.25);
+      border-radius: 14px;
+      background: rgba(0,0,0,0.28);
+      color: white;
+      font-size: 1em;
+      transition: all 0.25s ease;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 18px rgba(255,165,0,0.16);
+    }
+
+    .file-box {
+      background: rgba(0,0,0,0.22);
+      border: 2px dashed rgba(255,165,0,0.35);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .file-box input {
+      width: 100%;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+
+    .btn-principal,
+    .btn-secundario {
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.25s ease;
+      padding: 15px 28px;
+      font-size: 1em;
+    }
+
+    .btn-principal {
+      background: linear-gradient(135deg, var(--primary), #ff6b35);
+      color: white;
+      box-shadow: 0 10px 25px rgba(255,165,0,0.22);
+    }
+
+    .btn-principal:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 30px rgba(255,165,0,0.28);
+    }
+
+    .btn-principal:disabled {
+      background: #666;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .btn-secundario {
+      background: transparent;
+      border: 2px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-secundario:hover {
+      background: var(--primary);
+      color: #000;
+    }
+
+    .mensaje-recarga {
+      min-height: 24px;
+      text-align: center;
+      margin-top: 14px;
+      font-weight: 600;
+      color: rgba(255,255,255,0.9);
+    }
+
+    .mensaje-recarga.ok { color: var(--success); }
+    .mensaje-recarga.error { color: var(--danger); }
+    .mensaje-recarga.warn { color: var(--warning); }
+
+   @media (max-width: 768px) {
+
+  body {
+    padding: 12px;
+    overflow-x: hidden;
+  }
+
+  .container {
+    width: 100%;
+  }
+
+  .header {
+    padding: 22px 14px;
+    border-radius: 16px;
+    margin-bottom: 20px;
+  }
+
+  .header h1 {
+    font-size: 1.5em;
+    line-height: 1.2;
+  }
+
+  .header p {
+    font-size: 0.92em;
+  }
+
+  .card {
+    padding: 18px 14px;
+    border-radius: 18px;
+    margin-bottom: 18px;
+  }
+
+  .card h2 {
+    font-size: 1.1em;
+    line-height: 1.3;
+  }
+
+  .cuenta-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .dato-box {
+    padding: 16px;
+    border-radius: 14px;
+  }
+
+  .dato-label {
+    font-size: 0.8em;
+  }
+
+  .dato-value {
+    font-size: 1em;
+  }
+
+  .saldo-box .dato-value {
+    font-size: 1.5em;
+  }
+
+  .form-grid {
+    gap: 14px;
+  }
+
+  .input-group input {
+    padding: 14px;
+    font-size: 0.95em;
+    border-radius: 12px;
+  }
+
+  .file-box {
+    padding: 14px;
+    border-radius: 12px;
+  }
+
+  .actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .btn-principal,
+  .btn-secundario {
+    width: 100%;
+    padding: 15px 16px;
+    font-size: 0.95em;
+    border-radius: 14px;
+  }
+
+  #listaMovimientos > div {
+    padding: 12px 0 !important;
+  }
+
+  .mensaje-recarga {
+    font-size: 0.92em;
+    line-height: 1.4;
+  }
+
+  input[type="file"] {
+    font-size: 0.9em;
+  }
+
+  h2 {
+    word-break: break-word;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+}
+  </style>
+</head>
+
+
+<body>
+  <div class="container">
+
+    <div class="header">
+      <h1>👤 MI CUENTA</h1>
+      <p>Consulta tu saldo y solicita recargas para seguir jugando.</p>
+    </div>
+
+    <div class="card">
+      <h2>📌 Información del usuario</h2>
+
+      <div class="cuenta-grid">
+        <div class="dato-box">
+          <span class="dato-label">Nombre</span>
+          <span class="dato-value" id="nombreUsuario">--</span>
+        </div>
+
+        <div class="dato-box">
+          <span class="dato-label">Cédula</span>
+          <span class="dato-value" id="cedulaUsuario">--</span>
+        </div>
+
+        <div class="dato-box">
+          <span class="dato-label">Teléfono</span>
+          <span class="dato-value" id="telefonoUsuario">--</span>
+        </div>
+
+        <div class="dato-box saldo-box">
+          <span class="dato-label">Saldo disponible</span>
+          <span class="dato-value" id="saldoUsuario">0.00 Bs</span>
+        </div>
+      </div>
+    </div>
+ <div class="card">
+  <h2>⚡ Acciones rápidas</h2>
+
+  <div class="actions">
+    <button class="btn-principal" onclick="mostrarSeccion('recarga')">
+      💳 Recargar saldo
+    </button>
+
+    <button class="btn-secundario" onclick="mostrarSeccion('retiro')">
+      🏧 Solicitar retiro
+    </button>
+
+    <button class="btn-secundario" onclick="mostrarSeccion('movimientos')">
+      📜 Ver movimientos
+    </button>
+
+    <button class="btn-principal" onclick="window.location.href='comprar-cartones.html'">
+      🎫 2. Escoger cartones
+    </button>
+
+    <button class="btn-secundario" onclick="cerrarSesion()">
+      Cerrar sesión
+    </button>
+  </div>
+</div>
+
+<div class="card" id="seccionRecarga">
+  <h2>💳 Solicitar recarga</h2>
+ <h2>Banco: Mercantil</h2>
+<h2>TLF: 0412-3714136</h2>
+  <h2>CI: 26.740.060</h2>
+  <div class="form-grid">
+    <div class="input-group">
+      <label for="montoRecarga">Monto en Bs</label>
+      <input type="number" id="montoRecarga" placeholder="Ej: 10.00" min="1" step="0.01">
+    </div>
+
+    <div class="input-group">
+      <label for="referenciaRecarga">Últimos 4 dígitos de referencia</label>
+      <input type="text" id="referenciaRecarga" placeholder="Ej: 1234" maxlength="4">
+    </div>
+
+    <div class="input-group">
+      <label for="comprobanteRecarga">Comprobante de pago</label>
+      <div class="file-box">
+        <input type="file" id="comprobanteRecarga" accept="image/*">
+      </div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <button id="btnEnviarRecarga" class="btn-principal" onclick="solicitarRecarga()">
+      Enviar recarga
+    </button>
+  </div>
+
+  <p id="mensajeRecarga" class="mensaje-recarga"></p>
+</div>
+
+<div class="card" id="seccionRetiro" style="display: none;">
+  <h2>🏧 Solicitar retiro</h2>
+
+  <div class="form-grid">
+    <div class="input-group">
+      <label for="montoRetiro">Monto en Bs</label>
+      <input type="number" id="montoRetiro" placeholder="Ej: 10.00" min="1" step="0.01">
+    </div>
+
+    <div class="input-group">
+      <label for="telefonoRetiro">Teléfono pago móvil</label>
+      <input type="text" id="telefonoRetiro" placeholder="Ej: 04141234567">
+    </div>
+
+    <div class="input-group">
+      <label for="cedulaRetiro">Cédula titular</label>
+      <input type="text" id="cedulaRetiro" placeholder="Ej: V-12345678">
+    </div>
+
+    <div class="input-group">
+      <label for="bancoRetiro">Banco</label>
+      <input type="text" id="bancoRetiro" placeholder="Ej: Mercantil">
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-principal" onclick="solicitarRetiro()">
+      Enviar solicitud
+    </button>
+  </div>
+
+  <p id="mensajeRetiro" class="mensaje-recarga"></p>
+</div>
+
+<div class="card" id="seccionMovimientos" style="display: none;">
+  <h2>📜 Movimientos</h2>
+  <div id="listaMovimientos">Cargando movimientos...</div>
+</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <script>
+    const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    function obtenerUsuarioSesion() {
+      try {
+        return JSON.parse(localStorage.getItem('usuario_bingo'));
+      } catch {
+        return null;
+      }
+    }
+
+    function cerrarSesion() {
+      localStorage.removeItem('usuario_bingo');
+      window.location.href = 'login.html';
+    }
+
+    function requerirSesion() {
+      const usuario = obtenerUsuarioSesion();
+      if (!usuario) {
+        window.location.href = 'login.html';
+        return null;
+      }
+      return usuario;
+    }
+
+    async function cargarCuenta() {
+      const usuario = requerirSesion();
+      if (!usuario) return;
+
+      document.getElementById('nombreUsuario').textContent = usuario.nombre || '--';
+      document.getElementById('cedulaUsuario').textContent = usuario.cedula || '--';
+      document.getElementById('telefonoUsuario').textContent = usuario.telefono || '--';
+
+      const { data, error } = await supabaseClient
+        .from('billeteras_bingo')
+        .select('saldo')
+        .eq('usuario_id', usuario.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error cargando saldo:', error);
+        document.getElementById('saldoUsuario').textContent = 'Error';
+        return;
+      }
+
+      const saldo = Number(data?.saldo || 0);
+      document.getElementById('saldoUsuario').textContent = `${saldo.toFixed(2)} Bs`;
+    }
+async function solicitarRecarga() {
+  const usuario = requerirSesion();
+  if (!usuario) return;
+
+  const monto = parseFloat(document.getElementById('montoRecarga').value);
+  const referencia = document.getElementById('referenciaRecarga').value.trim();
+  const file = document.getElementById('comprobanteRecarga').files[0];
+  const mensaje = document.getElementById('mensajeRecarga');
+  const btn = document.getElementById('btnEnviarRecarga');
+
+  mensaje.className = 'mensaje-recarga';
+  mensaje.textContent = '';
+
+  if (!monto || monto <= 0) {
+    mensaje.className = 'mensaje-recarga warn';
+    mensaje.textContent = 'Ingresa un monto válido.';
+    return;
+  }
+
+  if (!/^\d{4}$/.test(referencia)) {
+    mensaje.className = 'mensaje-recarga warn';
+    mensaje.textContent = 'Ingresa los últimos 4 dígitos de la referencia.';
+    return;
+  }
+
+  if (!file) {
+    mensaje.className = 'mensaje-recarga warn';
+    mensaje.textContent = 'Debes subir el comprobante.';
+    return;
+  }
+
+  const tiposPermitidos = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+  if (!tiposPermitidos.includes(file.type)) {
+    mensaje.className = 'mensaje-recarga warn';
+    mensaje.textContent = 'Solo se permiten imágenes.';
+    return;
+  }
+
+  if (file.size > 5 * 1024 * 1024) {
+    mensaje.className = 'mensaje-recarga warn';
+    mensaje.textContent = 'El archivo es muy grande.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const fileName = `recarga_${usuario.id}_${Date.now()}`;
+
+    const { error: uploadError } = await supabaseClient.storage
+      .from('comprobantes')
+      .upload(fileName, file);
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabaseClient.storage
+      .from('comprobantes')
+      .getPublicUrl(fileName);
+
+    const { error: insertError } = await supabaseClient
+      .from('recargas_bingo')
+      .insert([{
+        usuario_id: usuario.id,
+        monto,
+        referencia_pago: referencia,
+        comprobante_url: data.publicUrl,
+        estado: 'pendiente'
+      }]);
+
+    if (insertError) throw insertError;
+
+    mensaje.className = 'mensaje-recarga ok';
+    mensaje.textContent = '✅ Recarga enviada correctamente. Cuando el admin la apruebe, toca "2. Escoger cartones".';
+
+    document.getElementById('montoRecarga').value = '';
+    document.getElementById('referenciaRecarga').value = '';
+    document.getElementById('comprobanteRecarga').value = '';
+
+  } catch (error) {
+    console.error(error);
+    mensaje.className = 'mensaje-recarga error';
+    mensaje.textContent = '❌ Error enviando recarga';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar recarga';
+  }
+}
+    
+  async function solicitarRetiro() {
+  const usuario = requerirSesion();
+  if (!usuario) return;
+
+  const monto = parseFloat(document.getElementById('montoRetiro').value);
+  const telefono = document.getElementById('telefonoRetiro').value.trim();
+  const cedula = document.getElementById('cedulaRetiro').value.trim();
+  const banco = document.getElementById('bancoRetiro').value.trim();
+  const mensaje = document.getElementById('mensajeRetiro');
+
+  mensaje.className = 'mensaje-recarga';
+  mensaje.textContent = '';
+
+  if (!monto || monto <= 0 || !telefono || !cedula || !banco) {
+    mensaje.className = 'mensaje-recarga warn';
+    mensaje.textContent = 'Completa todos los campos.';
+    return;
+  }
+
+  try {
+    const { data: billetera, error: billeteraError } = await supabaseClient
+      .from('billeteras_bingo')
+      .select('saldo')
+      .eq('usuario_id', usuario.id)
+      .maybeSingle();
+
+    if (billeteraError) throw billeteraError;
+
+    const saldoActual = Number(billetera?.saldo || 0);
+
+    if (saldoActual < monto) {
+      mensaje.className = 'mensaje-recarga warn';
+      mensaje.textContent = `Saldo insuficiente. Disponible: ${saldoActual.toFixed(2)} Bs`;
+      return;
+    }
+
+    const { error: insertError } = await supabaseClient
+      .from('retiros_bingo')
+      .insert([{
+        usuario_id: usuario.id,
+        monto,
+        telefono,
+        cedula_titular: cedula,
+        banco,
+        estado: 'pendiente'
+      }]);
+
+    if (insertError) throw insertError;
+
+    mensaje.className = 'mensaje-recarga ok';
+    mensaje.textContent = '✅ Solicitud de retiro enviada correctamente.';
+
+    document.getElementById('montoRetiro').value = '';
+    document.getElementById('telefonoRetiro').value = '';
+    document.getElementById('cedulaRetiro').value = '';
+    document.getElementById('bancoRetiro').value = '';
+  } catch (error) {
+    console.error('Error solicitando retiro:', error);
+    mensaje.className = 'mensaje-recarga error';
+    mensaje.textContent = '❌ No se pudo enviar la solicitud de retiro.';
+  }
+}
+    function mostrarSeccion(nombre) {
+  document.getElementById('seccionRecarga').style.display = nombre === 'recarga' ? 'block' : 'none';
+  document.getElementById('seccionRetiro').style.display = nombre === 'retiro' ? 'block' : 'none';
+  document.getElementById('seccionMovimientos').style.display = nombre === 'movimientos' ? 'block' : 'none';
+
+  if (nombre === 'movimientos') {
+    cargarMovimientos();
+  }
+}
+    async function cargarMovimientos() {
+  const usuario = requerirSesion();
+  if (!usuario) return;
+
+  const contenedor = document.getElementById('listaMovimientos');
+  contenedor.innerHTML = 'Cargando movimientos...';
+
+  const { data, error } = await supabaseClient
+    .from('billetera_movimientos')
+    .select('*')
+    .eq('usuario_id', usuario.id)
+    .order('creado_en', { ascending: false })
+    .limit(20);
+
+  if (error) {
+    contenedor.innerHTML = 'No se pudieron cargar los movimientos.';
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    contenedor.innerHTML = 'No tienes movimientos todavía.';
+    return;
+  }
+
+  contenedor.innerHTML = data.map(m => `
+    <div style="padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.08);">
+      <div style="font-weight: bold;">${m.tipo.toUpperCase()} - ${Number(m.monto).toFixed(2)} Bs</div>
+      <div style="color: rgba(255,255,255,0.7); font-size: 0.95em;">${m.descripcion || ''}</div>
+      <div style="color: rgba(255,255,255,0.5); font-size: 0.85em;">
+        Saldo: ${Number(m.saldo_anterior).toFixed(2)} → ${Number(m.saldo_nuevo).toFixed(2)} Bs
+      </div>
+    </div>
+  `).join('');
+}
+    
+   
+    cargarCuenta();
+  </script>
+
+</body>
+</html>
