@@ -255,6 +255,42 @@
 
     .control-buttons { display: flex; gap: 15px; flex-wrap: wrap; }
 
+    .schedule-panel {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 16px;
+      align-items: end;
+      margin: 24px 0 10px;
+      padding: 22px;
+      border-radius: 16px;
+      background: rgba(52, 152, 219, 0.10);
+      border: 1px solid rgba(52, 152, 219, 0.35);
+    }
+
+    .schedule-panel label {
+      display: block;
+      margin-bottom: 8px;
+      color: rgba(255,255,255,0.75);
+      font-weight: 600;
+    }
+
+    .schedule-panel input {
+      width: 100%;
+      padding: 13px;
+      color: white;
+      background: rgba(0,0,0,0.28);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+    }
+
+    .schedule-status {
+      grid-column: 1 / -1;
+      padding: 13px 16px;
+      border-radius: 10px;
+      color: #d7efff;
+      background: rgba(0,0,0,0.22);
+    }
+
     .btn-control {
       padding: 15px 30px;
       border: none;
@@ -636,6 +672,26 @@
             </div>
           </div>
 
+          <div class="schedule-panel">
+            <div>
+              <label for="minutosEntreJuegosInput">Próximo juego dentro de (minutos)</label>
+              <input id="minutosEntreJuegosInput" type="number" min="1" max="1440" step="1" value="60">
+            </div>
+            <div>
+              <label for="segundosEntreBolasInput">Tiempo entre bolas (segundos)</label>
+              <input id="segundosEntreBolasInput" type="number" min="5" max="60" step="1" value="5">
+            </div>
+            <button class="btn-control btn-start" onclick="guardarProgramacionAutomatica()">
+              ♾️ Guardar y activar ciclo
+            </button>
+            <button class="btn-control btn-stop" onclick="detenerProgramacionAutomatica()">
+              ⏸️ Detener ciclo
+            </button>
+            <div id="programacionEstadoAdmin" class="schedule-status">
+              Cargando programación del servidor...
+            </div>
+          </div>
+
           <div class="ball-display">
             <div id="currentBallDisplay" class="main-ball" style="display: none;">
               <span class="ball-letter" id="dispLetter">B</span>
@@ -849,8 +905,9 @@
 
     let currentGame = null;
     let availableBalls = [];
-    let autoInterval = null;
     let gameTimerInterval = null;
+    let programacionTimer = null;
+    let cicloAutomaticoActivo = false;
     let isProcessingBall = false;
     let adminLiveSubscription = null;
     let adminVentasTimer = null;
@@ -1028,8 +1085,8 @@
     }
 
     function logout() {
-      if (autoInterval) clearInterval(autoInterval);
       if (gameTimerInterval) clearInterval(gameTimerInterval);
+      if (programacionTimer) clearInterval(programacionTimer);
       location.reload();
     }
 
@@ -1066,7 +1123,8 @@
         checkCurrentGame(),
         updateApprovedPlayersCount(),
         updateApprovedRevenueStats(),
-        cargarAjustes()
+        cargarAjustes(),
+        cargarProgramacionAutomatica()
       ]);
       setupSubscriptions();
     }
@@ -1147,6 +1205,7 @@ async function cargarHistorialGanadores() {
 
   currentGame = data || null;
   updateAutoUI(currentGame);
+  actualizarCuentaProgramacionAdmin(currentGame);
 
   if (currentGame?.estado === 'jugando') {
     await loadAvailableBalls(currentGame.id);
@@ -1270,17 +1329,12 @@ function showWinnerColumna(info) {
           async (payload) => {
             currentGame = payload.new || null;
             updateAutoUI(currentGame);
+            actualizarCuentaProgramacionAdmin(currentGame);
 
             if (currentGame?.estado === 'jugando') {
               await loadAvailableBalls(currentGame.id);
               startGameTimer(new Date(currentGame.iniciado_en));
               await updateBallCount();
-            }
-
-            if (currentGame?.estado === 'finalizado' && autoInterval) {
-              clearInterval(autoInterval);
-              autoInterval = null;
-              document.getElementById('btnAutoMode').textContent = '🤖 Auto: OFF';
             }
 
 // 🟡 FILA
@@ -1358,10 +1412,10 @@ mostrando = false;
       }
 
       currentGame = data.juego;
-      availableBalls = shuffle(Array.from({ length: 75 }, (_, i) => i + 1));
       document.getElementById('autoBalls').textContent = '0';
 
-      updateAutoUI(data);
+      updateAutoUI(currentGame);
+      actualizarCuentaProgramacionAdmin(currentGame);
       startGameTimer(new Date());
       await updateApprovedPlayersCount();
     }
@@ -1460,30 +1514,21 @@ mostrando = false;
     async function drawBall() {
       if (isProcessingBall) return;
       if (!currentGame || currentGame.estado !== 'jugando') return;
-      if (availableBalls.length === 0) {
-        alert('No quedan bolas');
-        return;
-      }
-
       isProcessingBall = true;
       document.getElementById('btnDrawBall').disabled = true;
 
-      let num = null;
-
       try {
-        num = availableBalls.pop();
-        const { data, error } = await supabaseClient.rpc('bingo_admin_sortear_bola', {
-          p_juego_id: currentGame.id,
-          p_numero: num
+        const { data, error } = await supabaseClient.rpc('bingo_admin_sortear_bola_aleatoria', {
+          p_juego_id: currentGame.id
         });
 
         if (error) throw error;
-        if (!data?.ok) throw new Error(data?.codigo || 'No se pudo registrar la bola');
+        if (!data?.ok) {
+          if (data?.codigo === 'sin_bolas') throw new Error('No quedan bolas');
+          throw new Error(data?.codigo || 'No se pudo registrar la bola');
+        }
       } catch (error) {
         alert('Error al sacar bola: ' + error.message);
-        if (num !== null) {
-          availableBalls.push(num);
-        }
       } finally {
         isProcessingBall = false;
         if (currentGame?.estado === 'jugando') {
@@ -1492,37 +1537,43 @@ mostrando = false;
       }
     }
 
-    function toggleAuto() {
-      const btn = document.getElementById('btnAutoMode');
+    async function toggleAuto() {
+      if (!currentGame || currentGame.estado !== 'jugando') return;
 
-      if (autoInterval) {
-        clearInterval(autoInterval);
-        autoInterval = null;
-        btn.textContent = '🤖 Auto: OFF';
-        btn.style.background = 'var(--info)';
-      } else {
-        autoInterval = setInterval(drawBall, 5000);
-        btn.textContent = '🤖 Auto: ON';
-        btn.style.background = 'var(--success)';
+      const btn = document.getElementById('btnAutoMode');
+      btn.disabled = true;
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_auto_juego', {
+        p_juego_id: currentGame.id,
+        p_activo: !currentGame.auto_bolas
+      });
+
+      if (error || !data?.ok) {
+        alert('No se pudo cambiar el automático: ' + (error?.message || data?.codigo || 'error desconocido'));
+        updateAutoUI(currentGame);
+        return;
       }
+
+      currentGame = data.juego;
+      updateAutoUI(currentGame);
+      actualizarCuentaProgramacionAdmin(currentGame);
     }
 
     async function stopAutoGame() {
       if (!confirm('¿Finalizar juego?')) return;
 
-      if (autoInterval) {
-        clearInterval(autoInterval);
-        autoInterval = null;
-        document.getElementById('btnAutoMode').textContent = '🤖 Auto: OFF';
+      const { data, error } = await supabaseClient.rpc('bingo_admin_finalizar_juego', {
+        p_juego_id: currentGame.id
+      });
+
+      if (error || !data?.ok) {
+        alert('No se pudo finalizar: ' + (error?.message || data?.codigo || 'error desconocido'));
+        return;
       }
 
-      await supabaseClient
-        .from('bingo_automatico')
-        .update({
-          estado: 'finalizado',
-          finalizado_en: new Date().toISOString()
-        })
-        .eq('id', currentGame.id);
+      currentGame = data.juego || currentGame;
+      updateAutoUI(currentGame);
+      actualizarCuentaProgramacionAdmin(currentGame);
 
       if (gameTimerInterval) {
         clearInterval(gameTimerInterval);
@@ -1572,6 +1623,11 @@ mostrando = false;
         dot.className = 'status-dot ended';
         desc.textContent = 'Juego terminado';
       }
+
+      const autoBtn = document.getElementById('btnAutoMode');
+      const autoActivo = game?.estado === 'jugando' && Boolean(game.auto_bolas);
+      autoBtn.textContent = autoActivo ? '🤖 Servidor: ON' : '🤖 Servidor: OFF';
+      autoBtn.style.background = autoActivo ? 'var(--success)' : 'var(--info)';
     }
 
     function startGameTimer(startTime) {
@@ -1878,6 +1934,117 @@ async function eliminarPromo(id) {
 
       alert('Cartones liberados correctamente');
     }
+function formatearCuentaRegresivaAdmin(fechaObjetivo) {
+  if (!fechaObjetivo) return '--:--:--';
+  const segundos = Math.max(0, Math.ceil((new Date(fechaObjetivo).getTime() - Date.now()) / 1000));
+  const horas = Math.floor(segundos / 3600);
+  const minutos = Math.floor((segundos % 3600) / 60);
+  const resto = segundos % 60;
+  return [horas, minutos, resto].map(valor => String(valor).padStart(2, '0')).join(':');
+}
+
+function actualizarCuentaProgramacionAdmin(juego = currentGame) {
+  if (programacionTimer) clearInterval(programacionTimer);
+
+  const pintar = () => {
+    const estado = document.getElementById('programacionEstadoAdmin');
+    if (!estado) return;
+
+    if (juego?.estado === 'jugando') {
+      estado.textContent = juego.auto_bolas
+        ? `🟢 Juego en vivo · tiempo máximo restante: ${formatearCuentaRegresivaAdmin(juego.fin_estimado_en)}`
+        : '🟠 Juego en vivo · sorteo automático pausado';
+      return;
+    }
+
+    if (juego?.estado === 'esperando' && juego.proximo_juego_en) {
+      estado.textContent = `⏳ Próximo juego empieza en ${formatearCuentaRegresivaAdmin(juego.proximo_juego_en)} · ventas abiertas`;
+      return;
+    }
+
+    estado.textContent = cicloAutomaticoActivo
+      ? '♾️ Ciclo automático activo · preparando la próxima partida'
+      : '⏸️ Ciclo automático detenido';
+  };
+
+  pintar();
+  programacionTimer = setInterval(pintar, 1000);
+}
+
+async function cargarProgramacionAutomatica() {
+  const { data, error } = await supabaseClient
+    .from('config_bingo_auto')
+    .select('clave, valor')
+    .in('clave', ['ciclo_automatico', 'minutos_entre_juegos', 'tiempo_auto']);
+
+  if (error) {
+    console.error('Error cargando programación automática:', error);
+    return;
+  }
+
+  const mapa = Object.fromEntries((data || []).map(item => [item.clave, item.valor]));
+  cicloAutomaticoActivo = mapa.ciclo_automatico === 'true';
+
+  const minutosInput = document.getElementById('minutosEntreJuegosInput');
+  const segundosInput = document.getElementById('segundosEntreBolasInput');
+  if (minutosInput) minutosInput.value = parseInt(mapa.minutos_entre_juegos || '60', 10);
+  if (segundosInput) segundosInput.value = parseInt(mapa.tiempo_auto || '5', 10);
+
+  actualizarCuentaProgramacionAdmin(currentGame);
+}
+
+async function guardarProgramacionAutomatica() {
+  const minutos = parseInt(document.getElementById('minutosEntreJuegosInput')?.value || '60', 10);
+  const segundos = parseInt(document.getElementById('segundosEntreBolasInput')?.value || '5', 10);
+
+  if (!Number.isInteger(minutos) || minutos < 1 || minutos > 1440) {
+    alert('El tiempo para el próximo juego debe estar entre 1 minuto y 24 horas.');
+    return;
+  }
+  if (!Number.isInteger(segundos) || segundos < 5 || segundos > 60) {
+    alert('El tiempo entre bolas debe estar entre 5 y 60 segundos.');
+    return;
+  }
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_ciclo', {
+    p_activo: true,
+    p_minutos_entre_juegos: minutos,
+    p_segundos_bola: segundos
+  });
+
+  if (error || !data?.ok) {
+    alert('No se pudo activar el ciclo: ' + (error?.message || data?.codigo || 'error desconocido'));
+    return;
+  }
+
+  cicloAutomaticoActivo = true;
+  if (data.juego) currentGame = data.juego;
+  updateAutoUI(currentGame);
+  actualizarCuentaProgramacionAdmin(currentGame);
+  alert(`Ciclo automático activado. El próximo juego será en ${minutos} minuto(s).`);
+}
+
+async function detenerProgramacionAutomatica() {
+  const minutos = parseInt(document.getElementById('minutosEntreJuegosInput')?.value || '60', 10);
+  const segundos = parseInt(document.getElementById('segundosEntreBolasInput')?.value || '5', 10);
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_ciclo', {
+    p_activo: false,
+    p_minutos_entre_juegos: Math.max(1, Math.min(1440, minutos || 60)),
+    p_segundos_bola: Math.max(5, Math.min(60, segundos || 5))
+  });
+
+  if (error || !data?.ok) {
+    alert('No se pudo detener el ciclo: ' + (error?.message || data?.codigo || 'error desconocido'));
+    return;
+  }
+
+  cicloAutomaticoActivo = false;
+  if (data.juego) currentGame = data.juego;
+  actualizarCuentaProgramacionAdmin(currentGame);
+  alert('Ciclo automático detenido. La partida que ya esté en vivo no se interrumpe.');
+}
+
 async function cargarAjustes() {
   const precioInput = document.getElementById('precioCartonInput');
   const precioInfo = document.getElementById('precioActualInfo');
@@ -2079,12 +2246,6 @@ async function cargarAjustes() {
 
       const errores = [];
 
-      if (autoInterval) {
-        clearInterval(autoInterval);
-        autoInterval = null;
-        document.getElementById('btnAutoMode').textContent = '🤖 Auto: OFF';
-        document.getElementById('btnAutoMode').style.background = 'var(--info)';
-      }
       if (gameTimerInterval) {
         clearInterval(gameTimerInterval);
         gameTimerInterval = null;
@@ -2126,8 +2287,8 @@ ${errores.join('\n')}`);
     }
 
     window.addEventListener('beforeunload', () => {
-      if (autoInterval) clearInterval(autoInterval);
       if (gameTimerInterval) clearInterval(gameTimerInterval);
+      if (programacionTimer) clearInterval(programacionTimer);
       if (adminLiveSubscription) {
         try { adminLiveSubscription.unsubscribe(); } catch (_) {}
       }
@@ -2138,3 +2299,4 @@ ${errores.join('\n')}`);
   </script>
 </body>
 </html>
+
