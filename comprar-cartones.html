@@ -1017,6 +1017,7 @@
     let suscripcionTiempoReal = null;
     let pagoEnviado = false;
     let procesandoSeleccion = false;
+    let ventasCerradas = false;
     let cartonPreviewNumero = null;
 let cantidadCartonesDisponibles = 1000;
     let rotacionCartones = 0;
@@ -1045,7 +1046,59 @@ function requerirSesion() {
   }
   return usuario;
 }
+
+async function verificarVentasAbiertas() {
+  const { data, error } = await supabaseClient
+    .from('bingo_automatico')
+    .select('id')
+    .eq('estado', 'jugando')
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error verificando el estado de ventas:', error);
+    return true;
+  }
+
+  if (data) {
+    mostrarVentasCerradas();
+    return false;
+  }
+
+  return true;
+}
+
+function mostrarVentasCerradas() {
+  ventasCerradas = true;
+  if (timerApartado) {
+    clearInterval(timerApartado);
+    timerApartado = null;
+  }
+
+  document.getElementById('apartadoBanner')?.classList.remove('activo');
+  document.querySelectorAll('.section').forEach(section => section.classList.remove('active'));
+
+  let aviso = document.getElementById('ventasCerradasJuego');
+  if (!aviso) {
+    aviso = document.createElement('section');
+    aviso.id = 'ventasCerradasJuego';
+    aviso.className = 'section';
+    aviso.innerHTML = `
+      <div style="text-align:center; padding:40px 20px;">
+        <div style="font-size:4rem; margin-bottom:15px;">🔒</div>
+        <h2>Ventas cerradas durante la partida</h2>
+        <p style="margin:15px 0 25px;">Espera a que termine el juego actual para comprar nuevos cartones.</p>
+        <button class="btn-principal" onclick="window.location.href='automatico.html'">Ver partida en vivo</button>
+      </div>
+    `;
+    document.querySelector('.container')?.appendChild(aviso);
+  }
+  aviso.classList.add('active');
+}
+
     async function pagarConSaldo() {
+  if (!await verificarVentasAbiertas()) return;
+
   if (!miApartadoId) {
     alert('Primero confirma la selección de tus cartones');
     return;
@@ -1072,6 +1125,11 @@ function requerirSesion() {
     if (error) throw error;
 
     if (!data?.ok) {
+      if (data?.codigo === 'ventas_cerradas') {
+        mostrarVentasCerradas();
+        return;
+      }
+
       if (data?.codigo === 'saldo_insuficiente') {
         alert(`Saldo insuficiente. Tienes ${Number(data.saldo || 0).toFixed(2)} Bs y necesitas ${Number(data.monto || 0).toFixed(2)} Bs`);
         await cargarSaldoUsuario();
@@ -1257,6 +1315,11 @@ function requerirSesion() {
   async function init() {
   const usuario = requerirSesion();
   if (!usuario) return;
+
+  if (!await verificarVentasAbiertas()) {
+    iniciarSuscripcionTiempoReal();
+    return;
+  }
 
   document.getElementById('nombreComprador').readOnly = true;
   document.getElementById('telefonoComprador').readOnly = true;
@@ -1703,6 +1766,7 @@ function requerirSesion() {
 
     async function confirmarSeleccion() {
       if (procesandoSeleccion) return;
+      if (!await verificarVentasAbiertas()) return;
 
       const cartonesArray = Array.from(cartonesSeleccionados).map(Number).sort((a, b) => a - b);
 
@@ -1737,6 +1801,11 @@ function requerirSesion() {
         if (error) throw error;
 
         if (!data?.ok) {
+          if (data?.codigo === 'ventas_cerradas') {
+            mostrarVentasCerradas();
+            return;
+          }
+
           if (data?.codigo === 'cartones_ocupados') {
             (data.ocupados || []).forEach(num => cartonesSeleccionados.delete(num));
             await cargarEstadoCartones();
@@ -1852,6 +1921,13 @@ function requerirSesion() {
             actualizarStats();
           }
         )
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'bingo_automatico' },
+          async () => {
+            const abiertas = await verificarVentasAbiertas();
+            if (abiertas && ventasCerradas) window.location.reload();
+          }
+        )
         .subscribe();
     }
 
@@ -1871,6 +1947,8 @@ function requerirSesion() {
     }
 
     async function enviarPago() {
+      if (!await verificarVentasAbiertas()) return;
+
       if (!miApartadoId) {
         alert('Primero confirma la selección de tus cartones');
         return;
@@ -1919,13 +1997,20 @@ function requerirSesion() {
           .from('comprobantes')
           .getPublicUrl(fileName);
 
-        const { error: updateError } = await supabaseClient.rpc('bingo_registrar_comprobante', {
+        const { data: comprobante, error: updateError } = await supabaseClient.rpc('bingo_registrar_comprobante', {
           p_apartado_id: miApartadoId,
           p_comprobante_url: publicUrl,
           p_referencia_pago: referencia
         });
 
         if (updateError) throw updateError;
+        if (!comprobante?.ok) {
+          if (comprobante?.codigo === 'ventas_cerradas') {
+            mostrarVentasCerradas();
+            return;
+          }
+          throw new Error(comprobante?.codigo || 'No se pudo registrar el comprobante');
+        }
 
         clearInterval(timerApartado);
         timerApartado = null;
