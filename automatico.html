@@ -66,6 +66,23 @@
     }
     .estado-finalizado { background: var(--danger); }
 
+    .cuenta-juego {
+      margin: 16px auto 0;
+      max-width: 620px;
+      padding: 13px 18px;
+      border-radius: 14px;
+      background: rgba(52, 152, 219, 0.14);
+      border: 1px solid rgba(52, 152, 219, 0.4);
+      color: #d8f1ff;
+      font-weight: 700;
+    }
+
+    .cuenta-juego.live {
+      background: rgba(231, 76, 60, 0.16);
+      border-color: rgba(231, 76, 60, 0.5);
+      color: #ffd8d3;
+    }
+
     @keyframes pulse {
       0%, 100% { transform: scale(1); box-shadow: 0 0 20px rgba(39, 174, 96, 0.5); }
       50% { transform: scale(1.05); box-shadow: 0 0 40px rgba(39, 174, 96, 0.8); }
@@ -662,6 +679,9 @@
       <div id="estadoJuego" class="estado-juego estado-esperando">
         ⏳ ESPERANDO INICIO...
       </div>
+      <div id="cuentaJuegoCliente" class="cuenta-juego">
+        Consultando la programación del próximo juego...
+      </div>
     </div>
 
     <div id="errorBanner" class="error-banner">
@@ -789,6 +809,8 @@ let temporizadorReinicio = null;
     let rotacionCartones = 0;
     let refrescoCartonesTimer = null;
     let refrescoPremiosTimer = null;
+    let cuentaJuegoTimer = null;
+    let juegoCuentaActual = null;
 
     const RANGOS = {
       B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75]
@@ -1496,7 +1518,68 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
       suscripciones.push(salaSub);
     }
 
-   async function verificarEstadoActual() {
+    function formatearCuentaRegresivaCliente(fechaObjetivo) {
+      if (!fechaObjetivo) return '--:--:--';
+      const segundos = Math.max(0, Math.ceil((new Date(fechaObjetivo).getTime() - Date.now()) / 1000));
+      const horas = Math.floor(segundos / 3600);
+      const minutos = Math.floor((segundos % 3600) / 60);
+      const resto = segundos % 60;
+      return [horas, minutos, resto].map(valor => String(valor).padStart(2, '0')).join(':');
+    }
+
+    function actualizarCuentaJuegoCliente(juego) {
+      juegoCuentaActual = juego || null;
+
+      const pintar = () => {
+        const cuenta = document.getElementById('cuentaJuegoCliente');
+        if (!cuenta) return;
+
+        if (juegoCuentaActual?.estado === 'jugando') {
+          cuenta.classList.add('live');
+          cuenta.textContent = juegoCuentaActual.fin_estimado_en
+            ? `🔴 Juego en vivo · tiempo máximo restante: ${formatearCuentaRegresivaCliente(juegoCuentaActual.fin_estimado_en)}`
+            : '🔴 Juego en vivo · el sorteo está pausado por el administrador';
+          return;
+        }
+
+        cuenta.classList.remove('live');
+        if (juegoCuentaActual?.estado === 'esperando' && juegoCuentaActual.proximo_juego_en) {
+          cuenta.textContent = `⏳ Próximo juego empieza en ${formatearCuentaRegresivaCliente(juegoCuentaActual.proximo_juego_en)} · ventas abiertas`;
+        } else if (juegoCuentaActual?.estado === 'finalizado') {
+          cuenta.textContent = '🏁 Juego terminado · preparando la venta para la próxima partida';
+        } else {
+          cuenta.textContent = '⏸️ Esperando la programación del próximo juego';
+        }
+      };
+
+      pintar();
+      if (!cuentaJuegoTimer) cuentaJuegoTimer = setInterval(pintar, 1000);
+    }
+
+    function limpiarRondaAnteriorEnCliente() {
+      cartonesEnSala = [];
+      cartonesComprados = [];
+      numerosMarcadosPorCarton = {};
+      bolasCantadas = [];
+      pendingBalls = [];
+      bolasProcesadas = new Set();
+      premiosMostrados = { fila: null, columna: null, lleno: null };
+
+      document.getElementById('historialBolas').innerHTML = `
+        <p style="color: rgba(255,255,255,0.4); width: 100%; text-align: center;">
+          Las bolas aparecerán aquí cuando inicie el juego
+        </p>`;
+      document.getElementById('cartonesContainer').innerHTML = `
+        <div class="no-cartones">
+          <h2>🎫 Cartones liberados</h2>
+          <p>Compra tus cartones para el próximo juego.</p>
+        </div>`;
+      document.getElementById('infoCartones').textContent = '0 cartón(es)';
+      document.getElementById('subtitulo').textContent = 'Compra nuevos cartones para el siguiente juego';
+      document.getElementById('bolaActual').style.display = 'none';
+    }
+
+    async function verificarEstadoActual() {
   try {
     const { data, error } = await supabaseClient
       .from('bingo_automatico')
@@ -1506,11 +1589,15 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
       .maybeSingle();
 
     if (error) throw error;
-    if (!data) return;
+    if (!data) {
+      actualizarCuentaJuegoCliente(null);
+      return;
+    }
 
     await cargarResumenPremios();
 
     gameId = data.id;
+    actualizarCuentaJuegoCliente(data);
 
     if (data.estado === 'finalizado') {
       document.getElementById('estadoJuego').className = 'estado-juego estado-esperando';
@@ -1567,7 +1654,10 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
       const bolaDiv = document.getElementById('bolaActual');
       const esperando = document.getElementById('esperandoMensaje');
 
+      const esNuevaEspera = juego.estado === 'esperando' && gameId && Number(gameId) !== Number(juego.id);
+      if (esNuevaEspera) limpiarRondaAnteriorEnCliente();
       gameId = juego.id;
+      actualizarCuentaJuegoCliente(juego);
       await mostrarPremiosPreviosSiCorresponde(juego, juegoAnterior);
 
       switch (juego.estado) {
@@ -2018,6 +2108,7 @@ document.getElementById('esperandoMensaje').textContent =
     try { s.unsubscribe(); } catch (_) {}
   });
   if (temporizadorReinicio) clearTimeout(temporizadorReinicio);
+  if (cuentaJuegoTimer) clearInterval(cuentaJuegoTimer);
   clearTimeout(refrescoCartonesTimer);
   clearTimeout(refrescoPremiosTimer);
 });
@@ -2034,3 +2125,4 @@ document.getElementById('esperandoMensaje').textContent =
   </style>
 </body>
 </html>
+
