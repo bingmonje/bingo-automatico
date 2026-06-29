@@ -485,6 +485,23 @@
       animation: slideIn 0.5s ease;
     }
 
+    .game-schedule-banner {
+      margin-bottom: 18px;
+      padding: 16px 20px;
+      border-radius: 14px;
+      text-align: center;
+      font-weight: 700;
+      background: rgba(52, 152, 219, 0.16);
+      border: 1px solid rgba(52, 152, 219, 0.45);
+      color: #d8f1ff;
+    }
+
+    .game-schedule-banner.live {
+      background: rgba(231, 76, 60, 0.18);
+      border-color: rgba(231, 76, 60, 0.55);
+      color: #ffd9d5;
+    }
+
     @keyframes slideIn {
       from { transform: translateX(400px); }
       to { transform: translateX(0); }
@@ -803,6 +820,9 @@
   </div>
 
   <div class="container">
+    <div id="programacionJuegoBanner" class="game-schedule-banner">
+      Consultando la hora del próximo juego...
+    </div>
     
     <div class="header">
       <h1>🛒 COMPRAR CARTONES</h1>
@@ -1018,6 +1038,8 @@
     let pagoEnviado = false;
     let procesandoSeleccion = false;
     let ventasCerradas = false;
+    let juegoProgramacionActual = null;
+    let programacionVisualTimer = null;
     let cartonPreviewNumero = null;
 let cantidadCartonesDisponibles = 1000;
     let rotacionCartones = 0;
@@ -1050,8 +1072,8 @@ function requerirSesion() {
 async function verificarVentasAbiertas() {
   const { data, error } = await supabaseClient
     .from('bingo_automatico')
-    .select('id')
-    .eq('estado', 'jugando')
+    .select('id, estado, proximo_juego_en, fin_estimado_en, auto_bolas')
+    .order('id', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -1060,16 +1082,61 @@ async function verificarVentasAbiertas() {
     return true;
   }
 
-  if (data) {
-    mostrarVentasCerradas();
+  juegoProgramacionActual = data || null;
+  actualizarProgramacionVentas(juegoProgramacionActual);
+
+  if (data?.estado === 'jugando') {
+    mostrarVentasCerradas(data);
     return false;
   }
 
   return true;
 }
 
-function mostrarVentasCerradas() {
+function formatearCuentaRegresivaVentas(fechaObjetivo) {
+  if (!fechaObjetivo) return '--:--:--';
+  const segundos = Math.max(0, Math.ceil((new Date(fechaObjetivo).getTime() - Date.now()) / 1000));
+  const horas = Math.floor(segundos / 3600);
+  const minutos = Math.floor((segundos % 3600) / 60);
+  const resto = segundos % 60;
+  return [horas, minutos, resto].map(valor => String(valor).padStart(2, '0')).join(':');
+}
+
+function actualizarProgramacionVentas(juego) {
+  juegoProgramacionActual = juego || null;
+
+  const pintar = () => {
+    const banner = document.getElementById('programacionJuegoBanner');
+    const cuentaVivo = document.getElementById('tiempoJuegoVivo');
+    if (!banner) return;
+
+    if (juegoProgramacionActual?.estado === 'jugando') {
+      const restante = juegoProgramacionActual.fin_estimado_en
+        ? formatearCuentaRegresivaVentas(juegoProgramacionActual.fin_estimado_en)
+        : 'sin tiempo estimado';
+      banner.classList.add('live');
+      banner.textContent = `🔴 JUEGO EN VIVO · tiempo máximo restante: ${restante}`;
+      if (cuentaVivo) cuentaVivo.textContent = restante;
+      return;
+    }
+
+    banner.classList.remove('live');
+    if (juegoProgramacionActual?.estado === 'esperando' && juegoProgramacionActual.proximo_juego_en) {
+      banner.textContent = `⏳ Próximo juego empieza en ${formatearCuentaRegresivaVentas(juegoProgramacionActual.proximo_juego_en)} · compra antes de llegar a cero`;
+    } else {
+      banner.textContent = '🟢 Ventas abiertas · el administrador anunciará el próximo juego';
+    }
+  };
+
+  pintar();
+  if (!programacionVisualTimer) {
+    programacionVisualTimer = setInterval(pintar, 1000);
+  }
+}
+
+function mostrarVentasCerradas(juego = juegoProgramacionActual) {
   ventasCerradas = true;
+  juegoProgramacionActual = juego || juegoProgramacionActual;
   if (timerApartado) {
     clearInterval(timerApartado);
     timerApartado = null;
@@ -1084,16 +1151,18 @@ function mostrarVentasCerradas() {
     aviso.id = 'ventasCerradasJuego';
     aviso.className = 'section';
     aviso.innerHTML = `
-      <div style="text-align:center; padding:40px 20px;">
-        <div style="font-size:4rem; margin-bottom:15px;">🔒</div>
-        <h2>Ventas cerradas durante la partida</h2>
-        <p style="margin:15px 0 25px;">Espera a que termine el juego actual para comprar nuevos cartones.</p>
-        <button class="btn-principal" onclick="window.location.href='automatico.html'">Ver partida en vivo</button>
+        <div style="text-align:center; padding:40px 20px;">
+          <div style="font-size:4rem; margin-bottom:15px;">🔒</div>
+          <h2>🔴 Juego en vivo</h2>
+          <p style="margin:15px 0 10px;">Espera a que termine para comprar nuevos cartones.</p>
+          <p style="margin-bottom:25px; font-size:1.2em; font-weight:bold;">Tiempo máximo restante: <span id="tiempoJuegoVivo">--:--:--</span></p>
+          <button class="btn-principal" onclick="window.location.href='automatico.html'">Ver partida en vivo</button>
       </div>
     `;
     document.querySelector('.container')?.appendChild(aviso);
   }
   aviso.classList.add('active');
+  actualizarProgramacionVentas(juegoProgramacionActual);
 }
 
     async function pagarConSaldo() {
@@ -1923,8 +1992,11 @@ function mostrarVentasCerradas() {
         )
         .on('postgres_changes',
           { event: '*', schema: 'public', table: 'bingo_automatico' },
-          async () => {
-            const abiertas = await verificarVentasAbiertas();
+          async (payload) => {
+            juegoProgramacionActual = payload.new || null;
+            actualizarProgramacionVentas(juegoProgramacionActual);
+            const abiertas = juegoProgramacionActual?.estado !== 'jugando';
+            if (!abiertas) mostrarVentasCerradas(juegoProgramacionActual);
             if (abiertas && ventasCerradas) window.location.reload();
           }
         )
@@ -2081,6 +2153,7 @@ function mostrarVentasCerradas() {
   if (suscripcionTiempoReal) {
     try { suscripcionTiempoReal.unsubscribe(); } catch (_) {}
   }
+  if (programacionVisualTimer) clearInterval(programacionVisualTimer);
 
   const step4 = document.getElementById('step4');
   const estaEnPaso4 = step4 ? step4.classList.contains('active') : false;
@@ -2094,3 +2167,4 @@ function mostrarVentasCerradas() {
   </script>
 </body>
 </html>
+
