@@ -507,11 +507,16 @@
       .sidebar { width: 100%; position: relative; height: auto; }
       .main-content { margin-left: 0; }
     }
-    #listaRecargas {
+    #listaRecargas,
+    #listaRecuperacionesPin {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 18px;
   margin-top: 20px;
+}
+
+#listaRecuperacionesPin .card-recarga {
+  border-left-color: var(--warning);
 }
 
 .card-recarga {
@@ -648,6 +653,9 @@
         <div class="nav-item" onclick="showSection('retiros', this)">
   <span>🏧</span> Retiros <span id="badgeRetiros" class="nav-count">0</span>
 </div>
+        <div class="nav-item" onclick="showSection('recuperaciones', this)">
+          <span>🔑</span> Recuperar PIN <span id="badgeRecuperaciones" class="nav-count">0</span>
+        </div>
         <div class="nav-item" onclick="showSection('clientes', this)">
           <span>👥</span> Clientes y saldos
         </div>
@@ -818,6 +826,14 @@
   <h2>🏧 Retiros pendientes</h2>
   <div id="listaRetiros"></div>
 </div>
+      <!-- SECCIÓN: RECUPERACIÓN DE PIN -->
+      <div id="sec-recuperaciones" class="section">
+        <h2 class="section-title">🔑 Solicitudes para recuperar PIN</h2>
+        <p style="color:rgba(255,255,255,.7); line-height:1.5; margin-bottom:18px;">
+          Verifica la identidad por WhatsApp antes de aprobar. Al aprobar, el PIN nuevo reemplaza inmediatamente al anterior.
+        </p>
+        <div id="listaRecuperacionesPin">Abre esta sección para cargar las solicitudes.</div>
+      </div>
       <!-- SECCIÓN: CLIENTES Y SALDOS -->
       <div id="sec-clientes" class="section">
         <h2 class="section-title">👥 Clientes y saldos actuales</h2>
@@ -1017,6 +1033,8 @@
     let adminVentasTimer = null;
     let adminRevenueTimer = null;
     let adminPlayersTimer = null;
+    let adminPendientesTimer = null;
+    let recuperacionPinDisponible = true;
     let clientesSaldoAdmin = [];
 
     function shuffle(array) {
@@ -1035,16 +1053,26 @@
     }
 
     async function actualizarContadoresPendientes() {
+      const consultaRecuperaciones = recuperacionPinDisponible
+        ? supabaseClient.rpc('bingo_admin_listar_recuperaciones_pin')
+        : Promise.resolve({ data: [], error: null });
+
       const consultas = await Promise.all([
         supabaseClient.from('apartados_temp').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
         supabaseClient.from('recargas_bingo').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
-        supabaseClient.from('retiros_bingo').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente')
+        supabaseClient.from('retiros_bingo').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+        consultaRecuperaciones
       ]);
 
-      const [compras, recargas, retiros] = consultas;
+      const [compras, recargas, retiros, recuperaciones] = consultas;
       if (!compras.error) pintarContadorPendiente('badgeCompras', compras.count);
       if (!recargas.error) pintarContadorPendiente('badgeRecargas', recargas.count);
       if (!retiros.error) pintarContadorPendiente('badgeRetiros', retiros.count);
+      if (!recuperaciones.error) {
+        pintarContadorPendiente('badgeRecuperaciones', recuperaciones.data?.length || 0);
+      } else if (recuperaciones.error.code === 'PGRST202') {
+        recuperacionPinDisponible = false;
+      }
     }
     async function cargarRecargasPendientes() {
   const contenedor = document.getElementById('listaRecargas');
@@ -1134,6 +1162,105 @@ function abrirWhatsAppRetiro(numero, nombre, monto) {
 
   const mensaje = `Hola ${nombre || 'jugador'}, tu retiro de ${Number(monto || 0).toFixed(2)} Bs fue aprobado. Te envío el comprobante de pago.`;
   window.open(`https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener,noreferrer');
+}
+
+function abrirWhatsAppRecuperacion(numero, nombre) {
+  const destino = numeroWhatsAppInternacional(numero);
+  if (!destino) {
+    alert('Esta solicitud no tiene un número de WhatsApp válido.');
+    return;
+  }
+
+  const mensaje = `Hola ${nombre || 'jugador'}, recibimos una solicitud para cambiar el PIN de tu cuenta de Bingo Andino 75. Necesitamos confirmar que fuiste tú antes de aprobarla.`;
+  window.open(`https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener,noreferrer');
+}
+
+async function cargarRecuperacionesPin() {
+  const contenedor = document.getElementById('listaRecuperacionesPin');
+  if (!contenedor) return;
+  contenedor.innerHTML = 'Cargando solicitudes...';
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_listar_recuperaciones_pin');
+
+  if (error) {
+    console.error('Error cargando recuperaciones de PIN:', error);
+    if (error.code === 'PGRST202') recuperacionPinDisponible = false;
+    contenedor.innerHTML = 'No se pudieron cargar las solicitudes. Verifica que la migración de recuperación de PIN esté aplicada en Supabase.';
+    return;
+  }
+
+  recuperacionPinDisponible = true;
+  const solicitudes = data || [];
+  pintarContadorPendiente('badgeRecuperaciones', solicitudes.length);
+
+  if (!solicitudes.length) {
+    contenedor.innerHTML = 'No hay solicitudes de recuperación pendientes.';
+    return;
+  }
+
+  contenedor.innerHTML = solicitudes.map(solicitud => {
+    const nombre = escaparHtmlAdmin(solicitud.nombre || 'Jugador');
+    const cedula = numeroNormalAdmin(solicitud.cedula, 12) || '-';
+    const telefono = numeroNormalAdmin(solicitud.telefono) || '-';
+    const fecha = solicitud.solicitado_en
+      ? new Date(solicitud.solicitado_en).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+      : '-';
+
+    return `
+      <div class="card-recarga" id="recuperacion-pin-${solicitud.id}">
+        <p><strong>${nombre}</strong></p>
+        <p>Cédula: ${cedula}</p>
+        <p>Teléfono registrado: ${telefono}</p>
+        <p>Solicitada: ${fecha}</p>
+
+        <button
+          type="button"
+          class="btn-whatsapp-retiro"
+          data-whatsapp="${telefono}"
+          data-nombre="${nombre}"
+          onclick="abrirWhatsAppRecuperacion(this.dataset.whatsapp, this.dataset.nombre)"
+        >💬 Verificar identidad por WhatsApp</button>
+
+        <div class="acciones">
+          <button onclick="aprobarRecuperacionPin(${solicitud.id})">✅ Aprobar PIN</button>
+          <button onclick="rechazarRecuperacionPin(${solicitud.id})">❌ Rechazar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function aprobarRecuperacionPin(id) {
+  if (!confirm('¿Confirmaste por WhatsApp la identidad de este cliente? Al aprobar, su PIN anterior dejará de funcionar.')) return;
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_recuperacion_pin', {
+    p_solicitud_id: id
+  });
+
+  if (error || !data?.ok) {
+    alert('No se pudo aprobar el PIN: ' + (error?.message || data?.codigo || 'error desconocido'));
+    return;
+  }
+
+  document.getElementById(`recuperacion-pin-${id}`)?.remove();
+  await Promise.all([cargarRecuperacionesPin(), actualizarContadoresPendientes()]);
+  alert('PIN actualizado. Avísale al cliente que ya puede iniciar sesión con su PIN nuevo.');
+}
+
+async function rechazarRecuperacionPin(id) {
+  if (!confirm('¿Rechazar esta solicitud de recuperación?')) return;
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_rechazar_recuperacion_pin', {
+    p_solicitud_id: id
+  });
+
+  if (error || !data?.ok) {
+    alert('No se pudo rechazar la solicitud: ' + (error?.message || data?.codigo || 'error desconocido'));
+    return;
+  }
+
+  document.getElementById(`recuperacion-pin-${id}`)?.remove();
+  await Promise.all([cargarRecuperacionesPin(), actualizarContadoresPendientes()]);
 }
 
     async function cargarRetirosPendientes() {
@@ -1278,6 +1405,7 @@ function abrirWhatsAppRetiro(numero, nombre, monto) {
     function logout() {
       if (gameTimerInterval) clearInterval(gameTimerInterval);
       if (programacionTimer) clearInterval(programacionTimer);
+      if (adminPendientesTimer) clearInterval(adminPendientesTimer);
       location.reload();
     }
 
@@ -1299,6 +1427,7 @@ function abrirWhatsAppRetiro(numero, nombre, monto) {
         config: 'Ajustes',
         recargas: 'Recargas de usuarios',
         retiros: 'Retiros de usuarios',
+        recuperaciones: 'Recuperación de PIN',
         clientes: 'Clientes y saldos'
       };
       document.getElementById('pageTitle').textContent = titulos[section] || 'Panel Admin';
@@ -1309,6 +1438,7 @@ function abrirWhatsAppRetiro(numero, nombre, monto) {
       if (section === 'config') cargarAjustes();
       if (section === 'recargas') cargarRecargasPendientes();
       if (section === 'retiros') cargarRetirosPendientes();
+      if (section === 'recuperaciones') cargarRecuperacionesPin();
       if (section === 'clientes') cargarClientesSaldos();
     }
 
@@ -1322,6 +1452,8 @@ function abrirWhatsAppRetiro(numero, nombre, monto) {
         actualizarContadoresPendientes()
       ]);
       setupSubscriptions();
+      if (adminPendientesTimer) clearInterval(adminPendientesTimer);
+      adminPendientesTimer = setInterval(actualizarContadoresPendientes, 20000);
     }
 async function cargarHistorialGanadores() {
   const tbody = document.getElementById('tablaHistorialGanadores');
@@ -2756,6 +2888,7 @@ ${errores.join('\n')}`);
       clearTimeout(adminVentasTimer);
       clearTimeout(adminRevenueTimer);
       clearTimeout(adminPlayersTimer);
+      if (adminPendientesTimer) clearInterval(adminPendientesTimer);
     });
   </script>
 </body>
