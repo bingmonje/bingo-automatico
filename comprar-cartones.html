@@ -360,6 +360,12 @@
       flex-wrap: wrap;
     }
 
+    .seleccion-aleatoria {
+      display: flex;
+      justify-content: center;
+      margin: 0 0 22px;
+    }
+
     .stat {
       text-align: center;
     }
@@ -917,6 +923,12 @@
         <span style="color: var(--warning);">● Amarillo:</span> Apartado | 
         <span style="color: var(--danger);">● Rojo:</span> Ocupado
       </p>
+
+      <div class="seleccion-aleatoria">
+        <button class="btn-secundario" type="button" id="btnSeleccionAleatoria" onclick="seleccionarCartonesAleatorios()">
+          🎲 Escoger cartones aleatorios
+        </button>
+      </div>
       
       <div class="cartones-grid" id="gridCartones"></div>
       
@@ -1651,12 +1663,12 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
     async function toggleCarton(numero) {
       if (cartonesOcupados.has(numero)) {
         alert('Este cartón ya fue comprado');
-        return;
+        return false;
       }
 
       if (cartonesApartados.has(numero) && !cartonesSeleccionados.has(numero)) {
         alert('Este cartón está temporalmente apartado');
-        return;
+        return false;
       }
 
       if (cartonesSeleccionados.has(numero)) {
@@ -1664,13 +1676,59 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       } else {
         if (cartonesSeleccionados.size >= datosComprador.cantidad) {
           alert(`Ya seleccionaste ${datosComprador.cantidad} cartones`);
-          return;
+          return false;
         }
         cartonesSeleccionados.add(numero);
       }
 
       actualizarVisualGrid();
       actualizarStats();
+      return true;
+    }
+
+    async function seleccionarCartonesAleatorios() {
+      const cantidad = Number(datosComprador.cantidad || 0);
+      if (!cantidad) {
+        alert('Primero elige la cantidad de cartones');
+        return;
+      }
+
+      if (!await verificarVentasAbiertas()) return;
+
+      const btn = document.getElementById('btnSeleccionAleatoria');
+      btn.disabled = true;
+      btn.textContent = 'Buscando cartones disponibles...';
+
+      try {
+        await cargarEstadoCartones();
+
+        const disponibles = [];
+        for (let numero = 1; numero <= cantidadCartonesDisponibles; numero++) {
+          if (!cartonesOcupados.has(numero) && !cartonesApartados.has(numero)) {
+            disponibles.push(numero);
+          }
+        }
+
+        if (disponibles.length < cantidad) {
+          alert(`Solo quedan ${disponibles.length} cartones disponibles.`);
+          return;
+        }
+
+        for (let i = disponibles.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [disponibles[i], disponibles[j]] = [disponibles[j], disponibles[i]];
+        }
+
+        cartonesSeleccionados = new Set(disponibles.slice(0, cantidad));
+        actualizarVisualGrid();
+        actualizarStats();
+      } catch (error) {
+        console.error('Error seleccionando cartones aleatorios:', error);
+        alert('No se pudieron escoger cartones aleatorios. Intenta nuevamente.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = `🎲 Escoger ${cantidad} cartón(es) aleatorios`;
+      }
     }
 
     function generarCartonDesdeNumero(numeroCarton) {
@@ -1799,8 +1857,8 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
 
     async function toggleCartonDesdePreview() {
       if (cartonPreviewNumero === null) return;
-      await toggleCarton(cartonPreviewNumero);
-      renderizarPreviewCarton(cartonPreviewNumero);
+      const cambioRealizado = await toggleCarton(cartonPreviewNumero);
+      if (cambioRealizado) cerrarPreviewCarton();
     }
 
     function actualizarStats() {
@@ -1809,6 +1867,14 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       document.getElementById('statTotal').textContent = (datosComprador.precio_total || 0).toFixed(2) + ' Bs';
       document.getElementById('btnConfirmarCartones').disabled =
         cartonesSeleccionados.size !== (datosComprador.cantidad || 0);
+
+      const btnAleatorio = document.getElementById('btnSeleccionAleatoria');
+      if (btnAleatorio && !btnAleatorio.disabled) {
+        const cantidad = Number(datosComprador.cantidad || 0);
+        btnAleatorio.textContent = cantidad
+          ? `🎲 Escoger ${cantidad} cartón(es) aleatorios`
+          : '🎲 Escoger cartones aleatorios';
+      }
     }
 
     async function validarCartonesDisponibles(cartones) {
