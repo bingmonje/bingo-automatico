@@ -429,21 +429,19 @@ async function actualizarPanelUsuario() {
   if (usuario) {
     btnBilletera.style.display = 'block';
 
-    const { data, error } = await supabaseClient
-      .from('billeteras_bingo')
-      .select('saldo')
-      .eq('usuario_id', usuario.id)
-      .maybeSingle();
+    const { data, error } = await supabaseClient.rpc('bingo_cliente_cuenta_segura', {
+      p_token: usuario.token || ''
+    });
 
     const estado = document.getElementById('estadoBilletera');
     if (estado) {
       estado.style.display = 'block';
 
-      if (error) {
+      if (error || !data?.ok) {
         estado.textContent = 'No se pudo cargar el saldo';
         estado.style.color = 'var(--warning)';
       } else {
-        const saldo = Number(data?.saldo || 0);
+        const saldo = Number(data.saldo || 0);
         estado.textContent = `Saldo disponible: ${saldo.toFixed(2)} Bs`;
         estado.style.color = 'var(--success)';
       }
