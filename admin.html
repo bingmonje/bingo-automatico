@@ -557,6 +557,23 @@
 #listaRetiros .card-recarga strong {
   color: #6ec6ff;
 }
+
+.btn-whatsapp-retiro {
+  width: 100%;
+  margin-top: 14px;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 14px;
+  background: #25D366;
+  color: #062b14;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.btn-whatsapp-retiro:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
   </style>
 </head>
 <body>
@@ -1004,6 +1021,47 @@
   `).join('');
 }
     
+    function numeroNormalAdmin(valor, maximo = 15) {
+  return String(valor || '').replace(/\D/g, '').slice(0, maximo);
+}
+
+function decodificarContactosRetiroAdmin(valor) {
+  const partes = String(valor || '').split('|WA|');
+  return {
+    telefono: numeroNormalAdmin(partes[0]),
+    whatsapp: numeroNormalAdmin(partes[1] || '')
+  };
+}
+
+function escaparHtmlAdmin(valor) {
+  return String(valor ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function numeroWhatsAppInternacional(valor) {
+  let numero = numeroNormalAdmin(valor);
+  if (!numero) return '';
+  if (numero.startsWith('00')) numero = numero.slice(2);
+  if (numero.startsWith('58')) return numero;
+  if (numero.startsWith('0')) return `58${numero.slice(1)}`;
+  return `58${numero}`;
+}
+
+function abrirWhatsAppRetiro(numero, nombre, monto) {
+  const destino = numeroWhatsAppInternacional(numero);
+  if (!destino) {
+    alert('Esta solicitud no tiene un número de WhatsApp válido.');
+    return;
+  }
+
+  const mensaje = `Hola ${nombre || 'jugador'}, tu retiro de ${Number(monto || 0).toFixed(2)} Bs fue aprobado. Te envío el comprobante de pago.`;
+  window.open(`https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener,noreferrer');
+}
+
     async function cargarRetirosPendientes() {
   const contenedor = document.getElementById('listaRetiros');
   contenedor.innerHTML = 'Cargando...';
@@ -1035,20 +1093,36 @@
 
   pintarContadorPendiente('badgeRetiros', data.length);
 
-  contenedor.innerHTML = data.map(r => `
-    <div class="card-recarga" id="retiro-${r.id}">
-      <p><strong>${r.usuarios_bingo?.nombre}</strong></p>
-      <p>Cédula: ${r.usuarios_bingo?.cedula}</p>
-      <p>Monto: ${Number(r.monto).toFixed(2)} Bs</p>
-      <p>Teléfono: ${r.telefono}</p>
-      <p>Banco: ${r.banco}</p>
+  contenedor.innerHTML = data.map(r => {
+    const contactos = decodificarContactosRetiroAdmin(r.telefono);
+    const nombre = escaparHtmlAdmin(r.usuarios_bingo?.nombre || 'Jugador');
+    const cedulaUsuario = numeroNormalAdmin(r.usuarios_bingo?.cedula, 12) || '-';
+    const cedulaTitular = numeroNormalAdmin(r.cedula_titular, 12) || '-';
+    const banco = escaparHtmlAdmin(r.banco || '-');
+    const monto = Number(r.monto || 0).toFixed(2);
+    const botonWhatsApp = contactos.whatsapp
+      ? `<button type="button" class="btn-whatsapp-retiro" data-whatsapp="${contactos.whatsapp}" data-nombre="${nombre}" data-monto="${monto}" onclick="abrirWhatsAppRetiro(this.dataset.whatsapp, this.dataset.nombre, this.dataset.monto)">💬 WhatsApp ${contactos.whatsapp} · Enviar comprobante</button>`
+      : '<p style="color:var(--warning);">Sin número de WhatsApp registrado</p>';
 
-      <div class="acciones">
-        <button onclick="aprobarRetiro(${r.id})">✅ Aprobar</button>
-        <button onclick="rechazarRetiro(${r.id})">❌ Rechazar</button>
+    return `
+      <div class="card-recarga" id="retiro-${r.id}">
+        <p><strong>${nombre}</strong></p>
+        <p>Cédula del usuario: ${cedulaUsuario}</p>
+        <p>Cédula del titular: ${cedulaTitular}</p>
+        <p>Monto: ${monto} Bs</p>
+        <p>Teléfono pago móvil: ${contactos.telefono || '-'}</p>
+        <p>Banco: ${banco}</p>
+
+        ${botonWhatsApp}
+        <p style="font-size:.85em; color:rgba(255,255,255,.6);">Después de hacer el pago, abre WhatsApp, adjunta el comprobante y luego aprueba la solicitud.</p>
+
+        <div class="acciones">
+          <button onclick="aprobarRetiro(${r.id})">✅ Aprobar</button>
+          <button onclick="rechazarRetiro(${r.id})">❌ Rechazar</button>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
     
     async function aprobarRetiro(id) {
@@ -1256,6 +1330,7 @@ async function cargarHistorialGanadores() {
     startGameTimer(new Date(currentGame.iniciado_en));
     await updateBallCount();
   } else {
+    detenerRelojJuego(currentGame);
     document.getElementById('autoBalls').textContent = '0';
   }
 
@@ -1379,6 +1454,8 @@ function showWinnerColumna(info) {
               await loadAvailableBalls(currentGame.id);
               startGameTimer(new Date(currentGame.iniciado_en));
               await updateBallCount();
+            } else {
+              detenerRelojJuego(currentGame);
             }
 
 // 🟡 FILA
@@ -1643,9 +1720,7 @@ mostrando = false;
       updateAutoUI(currentGame);
       actualizarCuentaProgramacionAdmin(currentGame);
 
-      if (gameTimerInterval) {
-        clearInterval(gameTimerInterval);
-      }
+      detenerRelojJuego(currentGame);
     }
 
     function showBall(num, letra) {
@@ -1703,12 +1778,38 @@ mostrando = false;
 
       const start = startTime instanceof Date ? startTime : new Date(startTime);
 
-      gameTimerInterval = setInterval(() => {
-        const diff = Math.floor((Date.now() - start) / 1000);
+      const pintarTiempo = () => {
+        if (currentGame?.estado !== 'jugando') {
+          detenerRelojJuego(currentGame);
+          return;
+        }
+
+        const diff = Math.max(0, Math.floor((Date.now() - start) / 1000));
         const mins = Math.floor(diff / 60).toString().padStart(2, '0');
         const secs = (diff % 60).toString().padStart(2, '0');
         document.getElementById('autoTime').textContent = `${mins}:${secs}`;
-      }, 1000);
+      };
+
+      pintarTiempo();
+      gameTimerInterval = setInterval(pintarTiempo, 1000);
+    }
+
+    function detenerRelojJuego(game = currentGame) {
+      if (gameTimerInterval) {
+        clearInterval(gameTimerInterval);
+        gameTimerInterval = null;
+      }
+
+      if (game?.estado === 'finalizado' && game.iniciado_en && game.finalizado_en) {
+        const inicio = new Date(game.iniciado_en).getTime();
+        const fin = new Date(game.finalizado_en).getTime();
+        const diff = Math.max(0, Math.floor((fin - inicio) / 1000));
+        const mins = Math.floor(diff / 60).toString().padStart(2, '0');
+        const secs = (diff % 60).toString().padStart(2, '0');
+        document.getElementById('autoTime').textContent = `${mins}:${secs}`;
+      } else if (!game || game?.estado === 'esperando') {
+        document.getElementById('autoTime').textContent = '00:00';
+      }
     }
 
     async function updateBallCount() {
@@ -2374,4 +2475,3 @@ ${errores.join('\n')}`);
   </script>
 </body>
 </html>
-
