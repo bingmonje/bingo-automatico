@@ -362,7 +362,41 @@
       width: 100%;
       background: var(--panel-bg);
       border-radius: 15px;
-      overflow: hidden;
+      overflow-x: auto;
+    }
+
+    .clientes-toolbar {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin: 18px 0;
+    }
+
+    .clientes-toolbar input {
+      flex: 1;
+      min-width: 240px;
+      padding: 13px 16px;
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 10px;
+      background: rgba(0,0,0,0.28);
+      color: white;
+    }
+
+    .clientes-resumen {
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    .clientes-resumen span {
+      padding: 10px 15px;
+      border-radius: 999px;
+      background: rgba(255,165,0,0.12);
+      border: 1px solid rgba(255,165,0,0.3);
+      color: var(--secondary);
+      font-weight: 700;
     }
 
     .data-table th, .data-table td {
@@ -614,6 +648,9 @@
         <div class="nav-item" onclick="showSection('retiros', this)">
   <span>🏧</span> Retiros <span id="badgeRetiros" class="nav-count">0</span>
 </div>
+        <div class="nav-item" onclick="showSection('clientes', this)">
+          <span>👥</span> Clientes y saldos
+        </div>
         <div class="nav-item" onclick="showSection('promos', this)">
           <span>🏷️</span> Promociones
         </div>
@@ -758,11 +795,13 @@
           <th>Cédula</th>
           <th>Teléfono</th>
           <th>Cartón</th>
+          <th>Porcentaje</th>
+          <th>Ganó</th>
         </tr>
       </thead>
       <tbody id="tablaHistorialGanadores">
         <tr>
-          <td colspan="6" style="text-align:center; padding:40px;">Cargando...</td>
+          <td colspan="8" style="text-align:center; padding:40px;">Cargando...</td>
         </tr>
       </tbody>
     </table>
@@ -775,10 +814,43 @@
   <div id="listaRecargas"></div>
 </div>
       <!-- SECCIÓN: retiros PENDIENTES -->
-      <div id="sec-retiros" class="section">
+<div id="sec-retiros" class="section">
   <h2>🏧 Retiros pendientes</h2>
   <div id="listaRetiros"></div>
 </div>
+      <!-- SECCIÓN: CLIENTES Y SALDOS -->
+      <div id="sec-clientes" class="section">
+        <h2 class="section-title">👥 Clientes y saldos actuales</h2>
+        <div class="clientes-toolbar">
+          <input
+            id="buscarClienteAdmin"
+            type="search"
+            placeholder="Buscar por nombre, cédula o teléfono"
+            oninput="filtrarClientesAdmin()"
+          >
+          <button class="btn-control btn-auto" onclick="cargarClientesSaldos()">↻ Actualizar</button>
+        </div>
+        <div class="clientes-resumen">
+          <span id="totalClientesAdmin">0 clientes</span>
+          <span id="saldoClientesAdmin">Saldo total: 0.00 Bs</span>
+        </div>
+        <div class="data-table">
+          <table style="width:100%; min-width:760px;">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Cédula</th>
+                <th>Teléfono</th>
+                <th>Correo</th>
+                <th>Saldo actual</th>
+              </tr>
+            </thead>
+            <tbody id="tablaClientesAdmin">
+              <tr><td colspan="5" style="text-align:center; padding:40px;">Abre esta sección para cargar los clientes.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
       <!-- SECCIÓN: COMPRAS PENDIENTES -->
       <div id="sec-ventas" class="section">
         <h2 class="section-title">🛒 Compras</h2>
@@ -913,7 +985,8 @@
           <h3 style="color: var(--danger);">🚨 Reinicio general de cartones</h3>
           <p style="color: rgba(255,255,255,0.75); line-height: 1.6; margin-bottom: 20px;">
             Este botón libera <strong>todos</strong> los cartones del sistema.
-            Elimina los cartones apartados y vendidos, y marca las compras activas como <strong>rechazadas</strong> para evitar inconsistencias.
+            Elimina los cartones apartados y vendidos, marca las compras activas como <strong>rechazadas</strong>
+            y borra del almacenamiento los comprobantes de esas compras pendientes.
           </p>
           <button onclick="reiniciarSistemaCartones()" style="background: var(--danger); color: white; border: none; padding: 14px 28px; border-radius: 10px; cursor: pointer; font-weight: bold;">♻️ Reiniciar y liberar todos los cartones</button>
           <p style="color: rgba(255,255,255,0.5); margin-top: 12px; font-size: 0.92em;">
@@ -944,6 +1017,7 @@
     let adminVentasTimer = null;
     let adminRevenueTimer = null;
     let adminPlayersTimer = null;
+    let clientesSaldoAdmin = [];
 
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -1223,7 +1297,9 @@ function abrirWhatsAppRetiro(numero, nombre, monto) {
         historial: 'Historial de Ganadores',
         promos: 'Gestión de Promociones',
         config: 'Ajustes',
-        recargas: 'Recargas de usuarios'
+        recargas: 'Recargas de usuarios',
+        retiros: 'Retiros de usuarios',
+        clientes: 'Clientes y saldos'
       };
       document.getElementById('pageTitle').textContent = titulos[section] || 'Panel Admin';
 
@@ -1233,6 +1309,7 @@ function abrirWhatsAppRetiro(numero, nombre, monto) {
       if (section === 'config') cargarAjustes();
       if (section === 'recargas') cargarRecargasPendientes();
       if (section === 'retiros') cargarRetirosPendientes();
+      if (section === 'clientes') cargarClientesSaldos();
     }
 
     async function initAdmin() {
@@ -1266,7 +1343,7 @@ async function cargarHistorialGanadores() {
     console.error('Error cargando historial de ganadores:', error);
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align:center; padding:40px;">
+        <td colspan="8" style="text-align:center; padding:40px;">
           Error cargando historial
         </td>
       </tr>
@@ -1277,13 +1354,42 @@ async function cargarHistorialGanadores() {
   if (!data || data.length === 0) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="6" style="text-align:center; padding:40px;">
+        <td colspan="8" style="text-align:center; padding:40px;">
           No hay ganadores registrados hoy
         </td>
       </tr>
     `;
     return;
   }
+
+  const juegos = [...new Set(data.map(item => Number(item.juego_id)).filter(Number.isFinite))];
+  let pagos = [];
+
+  if (juegos.length > 0) {
+    const { data: pagosData, error: pagosError } = await supabaseClient
+      .from('bingo_premios_ganadores')
+      .select('juego_id,tipo_premio,numero_carton,monto_premio')
+      .in('juego_id', juegos);
+
+    if (pagosError) {
+      console.error('Error cargando montos pagados a ganadores:', pagosError);
+    } else {
+      pagos = pagosData || [];
+    }
+  }
+
+  const clavePremio = item =>
+    `${Number(item.juego_id)}|${String(item.tipo_premio || '').toLowerCase()}|${Number(item.numero_carton)}`;
+
+  const pagosPorGanador = new Map(
+    pagos.map(item => [clavePremio(item), Number(item.monto_premio || 0)])
+  );
+
+  const ganadoresPorPremio = new Map();
+  data.forEach(item => {
+    const clave = `${Number(item.juego_id)}|${String(item.tipo_premio || '').toLowerCase()}`;
+    ganadoresPorPremio.set(clave, (ganadoresPorPremio.get(clave) || 0) + 1);
+  });
 
   tbody.innerHTML = data.map(item => {
     const hora = item.creado_en
@@ -1296,18 +1402,124 @@ async function cargarHistorialGanadores() {
       ? '🔵 Columna'
       : '🏆 Cartón lleno';
 
+    const tipo = String(item.tipo_premio || '').toLowerCase();
+    const porcentajePremio = tipo === 'final' || tipo === 'lleno' ? 60 : 20;
+    const claveGrupo = `${Number(item.juego_id)}|${tipo}`;
+    const cantidadGanadores = Math.max(1, ganadoresPorPremio.get(claveGrupo) || 1);
+    const porcentajeIndividual = porcentajePremio / cantidadGanadores;
+    const textoPorcentaje = cantidadGanadores > 1
+      ? `${porcentajeIndividual.toFixed(2)}% (${porcentajePremio}% ÷ ${cantidadGanadores})`
+      : `${porcentajePremio}%`;
+    const monto = pagosPorGanador.get(clavePremio(item));
+    const textoMonto = Number.isFinite(monto) ? `${monto.toFixed(2)} Bs` : 'Sin registro';
+
     return `
       <tr>
         <td>${hora}</td>
         <td>${premio}</td>
-        <td>${item.nombre || '-'}</td>
-        <td>${item.cedula || '-'}</td>
-        <td>${item.telefono || '-'}</td>
+        <td>${escaparHtmlAdmin(item.nombre || '-')}</td>
+        <td>${escaparHtmlAdmin(numeroNormalAdmin(item.cedula, 12) || '-')}</td>
+        <td>${escaparHtmlAdmin(numeroNormalAdmin(item.telefono) || '-')}</td>
         <td>#${String(item.numero_carton || 0).padStart(4, '0')}</td>
+        <td>${textoPorcentaje}</td>
+        <td><strong>${textoMonto}</strong></td>
       </tr>
     `;
   }).join('');
 }
+
+async function cargarFilasPaginadasAdmin(tabla, columnas, columnaOrden) {
+  const filas = [];
+  const tamanoPagina = 1000;
+  let desde = 0;
+
+  while (true) {
+    const { data, error } = await supabaseClient
+      .from(tabla)
+      .select(columnas)
+      .order(columnaOrden, { ascending: true })
+      .range(desde, desde + tamanoPagina - 1);
+
+    if (error) throw error;
+    filas.push(...(data || []));
+
+    if (!data || data.length < tamanoPagina) break;
+    desde += tamanoPagina;
+  }
+
+  return filas;
+}
+
+function textoBusquedaAdmin(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function renderizarClientesAdmin(clientes) {
+  const tbody = document.getElementById('tablaClientesAdmin');
+  if (!tbody) return;
+
+  if (!clientes.length) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px;">No se encontraron clientes.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = clientes.map(cliente => `
+    <tr>
+      <td><strong>${escaparHtmlAdmin(cliente.nombre || 'Sin nombre')}</strong></td>
+      <td>${escaparHtmlAdmin(numeroNormalAdmin(cliente.cedula, 12) || '-')}</td>
+      <td>${escaparHtmlAdmin(numeroNormalAdmin(cliente.telefono) || '-')}</td>
+      <td>${escaparHtmlAdmin(cliente.email || '-')}</td>
+      <td><strong>${Number(cliente.saldo || 0).toFixed(2)} Bs</strong></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarClientesAdmin() {
+  const termino = textoBusquedaAdmin(document.getElementById('buscarClienteAdmin')?.value);
+  if (!termino) {
+    renderizarClientesAdmin(clientesSaldoAdmin);
+    return;
+  }
+
+  const filtrados = clientesSaldoAdmin.filter(cliente =>
+    textoBusquedaAdmin(`${cliente.nombre} ${cliente.cedula} ${cliente.telefono} ${cliente.email}`).includes(termino)
+  );
+  renderizarClientesAdmin(filtrados);
+}
+
+async function cargarClientesSaldos() {
+  const tbody = document.getElementById('tablaClientesAdmin');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px;">Cargando clientes y saldos...</td></tr>';
+
+  try {
+    const [usuarios, billeteras] = await Promise.all([
+      cargarFilasPaginadasAdmin('usuarios_bingo', 'id,nombre,cedula,telefono,email', 'id'),
+      cargarFilasPaginadasAdmin('billeteras_bingo', 'usuario_id,saldo', 'usuario_id')
+    ]);
+
+    const saldoPorUsuario = new Map(
+      billeteras.map(item => [String(item.usuario_id), Number(item.saldo || 0)])
+    );
+
+    clientesSaldoAdmin = usuarios.map(usuario => ({
+      ...usuario,
+      saldo: saldoPorUsuario.get(String(usuario.id)) || 0
+    }));
+
+    const saldoTotal = clientesSaldoAdmin.reduce((total, cliente) => total + Number(cliente.saldo || 0), 0);
+    document.getElementById('totalClientesAdmin').textContent = `${clientesSaldoAdmin.length} cliente(s)`;
+    document.getElementById('saldoClientesAdmin').textContent = `Saldo total: ${saldoTotal.toFixed(2)} Bs`;
+    filtrarClientesAdmin();
+  } catch (error) {
+    console.error('Error cargando clientes y saldos:', error);
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px;">No se pudieron cargar los clientes: ${escaparHtmlAdmin(error.message || 'error desconocido')}</td></tr>`;
+  }
+}
+
   async function checkCurrentGame() {
   const { data, error } = await supabaseClient
     .from('bingo_automatico')
@@ -1993,7 +2205,7 @@ async function eliminarPromo(id) {
     }
 
     function renderAccionesVenta(v) {
-      const verBtn = v.comprobante_url
+      const verBtn = v.comprobante_url && ['pendiente', 'aprobado'].includes(v.estado)
         ? `<button onclick="verComprobante('${String(v.comprobante_url).replace(/'/g, "\\'")}')" style="padding: 8px 15px; background: var(--info); border: none; border-radius: 5px; color: white; cursor: pointer; margin-right: 5px;">Ver</button>`
         : '';
 
@@ -2413,26 +2625,99 @@ async function cargarAjustes() {
   alert('Cantidad de cartones guardada correctamente');
 }
 
+    function extraerRutaComprobanteCompra(url) {
+      const texto = String(url || '');
+      const marcadores = [
+        '/storage/v1/object/public/comprobantes/',
+        '/storage/v1/object/sign/comprobantes/'
+      ];
+
+      for (const marcador of marcadores) {
+        const posicion = texto.indexOf(marcador);
+        if (posicion === -1) continue;
+
+        const rutaCodificada = texto.slice(posicion + marcador.length).split('?')[0];
+        let ruta = rutaCodificada;
+        try { ruta = decodeURIComponent(rutaCodificada); } catch (_) {}
+
+        const archivo = ruta.split('/').pop() || '';
+        return archivo.startsWith('comprobante_') ? ruta : null;
+      }
+
+      return null;
+    }
+
+    async function obtenerRutasComprobantesComprasActivas() {
+      const { data, error } = await supabaseClient
+        .from('apartados_temp')
+        .select('comprobante_url')
+        .in('estado', ['apartado', 'pendiente'])
+        .not('comprobante_url', 'is', null);
+
+      if (error) throw error;
+
+      return [...new Set(
+        (data || [])
+          .map(item => extraerRutaComprobanteCompra(item.comprobante_url))
+          .filter(Boolean)
+      )];
+    }
+
+    async function eliminarComprobantesCompraStorage(rutas) {
+      let eliminados = 0;
+      const tamanoLote = 100;
+
+      for (let i = 0; i < rutas.length; i += tamanoLote) {
+        const lote = rutas.slice(i, i + tamanoLote);
+        const { data, error } = await supabaseClient.storage
+          .from('comprobantes')
+          .remove(lote);
+
+        if (error) throw error;
+        eliminados += Array.isArray(data) ? data.length : lote.length;
+      }
+
+      return eliminados;
+    }
+
     async function reiniciarSistemaCartones() {
-      const confirmar = confirm('Esto liberará TODOS los cartones apartados y vendidos. ¿Deseas continuar?');
+      const confirmar = confirm('Esto liberará TODOS los cartones apartados y vendidos, y eliminará de Supabase los comprobantes de compras pendientes. ¿Deseas continuar?');
       if (!confirmar) return;
 
-      const confirmarFinal = confirm('Última confirmación: también se marcarán las compras activas como RECHAZADAS.');
+      const confirmarFinal = confirm('Última confirmación: las compras activas se marcarán como RECHAZADAS y sus comprobantes pendientes no podrán recuperarse.');
       if (!confirmarFinal) return;
 
       const errores = [];
+      let rutasComprobantes = [];
+      let comprobantesEliminados = 0;
+      let reinicioCompletado = false;
 
       if (gameTimerInterval) {
         clearInterval(gameTimerInterval);
         gameTimerInterval = null;
       }
 
-      const { data: reinicio, error: reinicioError } = await supabaseClient
-        .rpc('bingo_admin_reiniciar_ventas');
+      try {
+        rutasComprobantes = await obtenerRutasComprobantesComprasActivas();
+      } catch (error) {
+        errores.push('No se pudieron identificar los comprobantes pendientes: ' + error.message);
+      }
+
+      const { data: reinicio, error: reinicioError } = await supabaseClient.rpc('bingo_admin_reiniciar_ventas');
 
       if (reinicioError || !reinicio?.ok) {
         errores.push('No se pudo reiniciar el sistema de cartones: ' +
           (reinicioError?.message || reinicio?.codigo || 'error desconocido'));
+      } else {
+        reinicioCompletado = true;
+      }
+
+      if (reinicioCompletado && rutasComprobantes.length > 0) {
+        try {
+          comprobantesEliminados = await eliminarComprobantesCompraStorage(rutasComprobantes);
+        } catch (error) {
+          errores.push('Los cartones se reiniciaron, pero no se pudieron borrar todos los comprobantes de Supabase Storage: ' + error.message);
+        }
       }
 
       document.getElementById('winnerDisplay').classList.remove('active');
@@ -2459,7 +2744,7 @@ ${errores.join('\n')}`);
         return;
       }
 
-      alert('Reinicio completado. Todos los cartones quedaron disponibles nuevamente.');
+      alert(`Reinicio completado. Todos los cartones quedaron disponibles nuevamente.\nComprobantes pendientes eliminados: ${comprobantesEliminados}.`);
     }
 
     window.addEventListener('beforeunload', () => {
