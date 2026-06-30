@@ -657,6 +657,9 @@
     .mi-cuenta-zona {
       display: flex;
       justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
       margin-top: 18px;
     }
     .mi-cuenta-enlace {
@@ -668,7 +671,23 @@
       transition: transform .2s ease, box-shadow .2s ease;
     }
     .mi-cuenta-enlace:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,.4); }
-    @media (max-width: 600px) { .mi-cuenta-enlace { padding: 9px 13px; font-size: .9em; } }
+    .btn-voz-bingo {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 17px;
+      border: 1px solid rgba(255,255,255,.24);
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(0,0,0,.25);
+    }
+    .btn-voz-bingo.activa { background: linear-gradient(135deg, #27ae60, #1e8449); }
+    @media (max-width: 600px) {
+      .mi-cuenta-enlace, .btn-voz-bingo { padding: 9px 13px; font-size: .9em; }
+    }
   </style>
 </head>
 <body>
@@ -702,6 +721,7 @@
       </div>
       <div class="mi-cuenta-zona">
         <a class="mi-cuenta-enlace" href="cuenta.html" target="_self">👤 Mi cuenta</a>
+        <button id="btnVozBingo" class="btn-voz-bingo" type="button" onclick="alternarVozBingo()">🔊 Voz: activa</button>
       </div>
     </div>
 
@@ -834,10 +854,60 @@ let temporizadorReinicio = null;
     let juegoCuentaActual = null;
     let minimoCartonesInicio = 15;
     let cartonesVendidosProgramacion = 0;
+    let vozBingoActiva = localStorage.getItem('vozBingoActiva') !== 'false';
 
     const RANGOS = {
       B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75]
     };
+
+    function obtenerVozEspanol() {
+      if (!('speechSynthesis' in window)) return null;
+      const voces = window.speechSynthesis.getVoices();
+      return voces.find(voz => String(voz.lang).toLowerCase() === 'es-ve')
+        || voces.find(voz => String(voz.lang).toLowerCase().startsWith('es'))
+        || null;
+    }
+
+    function actualizarBotonVozBingo() {
+      const boton = document.getElementById('btnVozBingo');
+      if (!boton) return;
+
+      const disponible = 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window;
+      boton.disabled = !disponible;
+      boton.classList.toggle('activa', disponible && vozBingoActiva);
+      boton.textContent = !disponible
+        ? '🔇 Voz no disponible'
+        : vozBingoActiva ? '🔊 Voz: activa' : '🔇 Voz: apagada';
+    }
+
+    function hablarTextoBingo(texto) {
+      if (!vozBingoActiva || !('speechSynthesis' in window) || !('SpeechSynthesisUtterance' in window)) return;
+
+      const mensaje = new SpeechSynthesisUtterance(texto);
+      const voz = obtenerVozEspanol();
+      mensaje.lang = voz?.lang || 'es-VE';
+      mensaje.rate = 0.86;
+      mensaje.pitch = 1;
+      mensaje.volume = 1;
+      if (voz) mensaje.voice = voz;
+
+      window.speechSynthesis.cancel();
+      window.speechSynthesis.speak(mensaje);
+    }
+
+    function alternarVozBingo() {
+      vozBingoActiva = !vozBingoActiva;
+      localStorage.setItem('vozBingoActiva', String(vozBingoActiva));
+      if (!vozBingoActiva && 'speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      actualizarBotonVozBingo();
+      if (vozBingoActiva) hablarTextoBingo('Narrador activado');
+    }
+
+    function narrarBola(numero, letra) {
+      hablarTextoBingo(`${letra}, número ${numero}`);
+    }
 
     async function cargarRotacionCartones() {
   const { data, error } = await supabaseClient
@@ -1117,6 +1187,8 @@ let temporizadorReinicio = null;
     function abrirJuego() {
       document.getElementById('loginCedula').style.display = 'none';
       document.getElementById('juegoApp').style.display = 'block';
+      actualizarBotonVozBingo();
+      hablarTextoBingo('Narrador activado');
       mostrarEstadoIngreso('');
       limpiarVistaJuego();
       mostrarPantallaJuego();
@@ -1760,6 +1832,7 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
       mostrarBolaActual(bola.numero, letra);
       agregarAlHistorial(bola.numero, letra);
       bolasCantadas.push(bola.numero);
+      narrarBola(bola.numero, letra);
 
       obtenerUniversoCartones().forEach(numCarton => {
         marcarNumeroEnCarton(
