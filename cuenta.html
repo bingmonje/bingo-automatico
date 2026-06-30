@@ -528,6 +528,7 @@
 
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     let canalRecargasCuenta = null;
+    let ultimoEstadoCuenta = null;
     let temporizadorNotificacionRecarga = null;
 
     function obtenerUsuarioSesion() {
@@ -538,7 +539,9 @@
       }
     }
 
-    function cerrarSesion() {
+    async function cerrarSesion() {
+      const token = obtenerUsuarioSesion()?.token;
+      if (token) await supabaseClient.rpc('bingo_cerrar_sesion_cliente', { p_token: token });
       localStorage.removeItem('usuario_bingo');
       window.location.href = 'login.html';
     }
@@ -560,21 +563,24 @@
       document.getElementById('cedulaUsuario').textContent = usuario.cedula || '--';
       document.getElementById('telefonoUsuario').textContent = usuario.telefono || '--';
 
-      const { data, error } = await supabaseClient
-        .from('billeteras_bingo')
-        .select('saldo')
-        .eq('usuario_id', usuario.id)
-        .maybeSingle();
+      const { data, error } = await supabaseClient.rpc('bingo_cliente_cuenta_segura', {
+        p_token: usuario.token || ''
+      });
 
-      if (error) {
+      if (error || !data?.ok) {
         console.error('Error cargando saldo:', error);
+        if (data?.codigo === 'sesion_invalida') {
+          localStorage.removeItem('usuario_bingo');
+          window.location.href = 'login.html';
+          return null;
+        }
         document.getElementById('saldoUsuario').textContent = 'Error';
         return null;
       }
 
-      const saldo = Number(data?.saldo || 0);
+      const saldo = Number(data.saldo || 0);
       document.getElementById('saldoUsuario').textContent = `${saldo.toFixed(2)} Bs`;
-      return saldo;
+      return { saldo, estado: data };
     }
 
     function mostrarNotificacionRecarga(monto, saldoNuevo) {
@@ -664,13 +670,10 @@
       }
 
       if (!datos) {
-        const { data: ultimoRetiro } = await supabaseClient
-          .from('retiros_bingo')
-          .select('telefono, cedula_titular, banco')
-          .eq('usuario_id', usuario.id)
-          .order('solicitado_en', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+        const { data: cuenta } = await supabaseClient.rpc('bingo_cliente_cuenta_segura', {
+          p_token: usuario.token || ''
+        });
+        const ultimoRetiro = cuenta?.ok ? cuenta.datos_retiro : null;
 
         if (ultimoRetiro) {
           const contactos = decodificarContactosRetiro(ultimoRetiro.telefono);
@@ -702,7 +705,7 @@
       guardarDatosRetiro(usuario);
     }
 
-    function iniciarTiempoRealRecargas(usuario) {
+    function iniciarTiempoRealRecargasLegacy(usuario) {
       if (!usuario?.id || canalRecargasCuenta) return;
 
       canalRecargasCuenta = supabaseClient
@@ -761,6 +764,29 @@
         )
         .subscribe();
     }
+
+    async function comprobarCambiosCuenta() {
+      const resultado = await cargarCuenta();
+      if (!resultado) return;
+      const actual = resultado.estado;
+      const anterior = ultimoEstadoCuenta;
+
+      if (anterior && actual.ultima_recarga?.estado === 'aprobado'
+          && anterior.ultima_recarga?.estado !== 'aprobado') {
+        mostrarNotificacionRecarga(actual.ultima_recarga.monto, resultado.saldo);
+      }
+      if (anterior && actual.ultimo_retiro?.estado === 'aprobado'
+          && anterior.ultimo_retiro?.estado !== 'aprobado') {
+        mostrarNotificacionRetiro(actual.ultimo_retiro.monto, resultado.saldo);
+      }
+      ultimoEstadoCuenta = actual;
+    }
+
+    function iniciarTiempoRealRecargas(usuario) {
+      if (!usuario?.token || canalRecargasCuenta) return;
+      canalRecargasCuenta = setInterval(comprobarCambiosCuenta, 5000);
+    }
+
 async function decodificarImagenRecarga(file) {
   if ('createImageBitmap' in window) {
     try {
@@ -880,17 +906,16 @@ async function solicitarRecarga() {
       .from('comprobantes')
       .getPublicUrl(fileName);
 
-    const { error: insertError } = await supabaseClient
-      .from('recargas_bingo')
-      .insert([{
-        usuario_id: usuario.id,
-        monto,
-        referencia_pago: referencia,
-        comprobante_url: data.publicUrl,
-        estado: 'pendiente'
-      }]);
+    const { data: solicitud, error: insertError } = await supabaseClient.rpc(
+      'bingo_cliente_solicitar_recarga_seguro',
+      {
+        p_token: usuario.token || '', p_monto: monto,
+        p_referencia: referencia, p_comprobante_url: data.publicUrl
+      }
+    );
 
     if (insertError) throw insertError;
+    if (!solicitud?.ok) throw new Error(solicitud?.codigo || 'No se pudo registrar la recarga');
 
     mensaje.className = 'mensaje-recarga ok';
     mensaje.textContent = '✅ Recarga enviada. Te avisaremos aquí y el saldo se actualizará automáticamente cuando sea aprobada.';
@@ -938,34 +963,29 @@ async function solicitarRecarga() {
   guardarDatosRetiro(usuario);
 
   try {
-    const { data: billetera, error: billeteraError } = await supabaseClient
-      .from('billeteras_bingo')
-      .select('saldo')
-      .eq('usuario_id', usuario.id)
-      .maybeSingle();
-
-    if (billeteraError) throw billeteraError;
-
-    const saldoActual = Number(billetera?.saldo || 0);
-
-    if (saldoActual < monto) {
-      mensaje.className = 'mensaje-recarga warn';
-      mensaje.textContent = `Saldo insuficiente. Disponible: ${saldoActual.toFixed(2)} Bs`;
-      return;
-    }
-
-    const { error: insertError } = await supabaseClient
-      .from('retiros_bingo')
-      .insert([{
-        usuario_id: usuario.id,
-        monto,
-        telefono: codificarContactosRetiro(telefono, whatsapp),
-        cedula_titular: cedula,
-        banco,
-        estado: 'pendiente'
-      }]);
+    const { data: solicitud, error: insertError } = await supabaseClient.rpc(
+      'bingo_cliente_solicitar_retiro_seguro',
+      {
+        p_token: usuario.token || '', p_monto: monto,
+        p_telefono: codificarContactosRetiro(telefono, whatsapp),
+        p_cedula_titular: cedula, p_banco: banco
+      }
+    );
 
     if (insertError) throw insertError;
+    if (!solicitud?.ok) {
+      if (solicitud?.codigo === 'saldo_insuficiente') {
+        mensaje.className = 'mensaje-recarga warn';
+        mensaje.textContent = `Saldo insuficiente. Disponible: ${Number(solicitud.saldo || 0).toFixed(2)} Bs`;
+        return;
+      }
+      if (solicitud?.codigo === 'retiro_pendiente') {
+        mensaje.className = 'mensaje-recarga warn';
+        mensaje.textContent = 'Ya tienes un retiro pendiente de aprobacion.';
+        return;
+      }
+      throw new Error(solicitud?.codigo || 'No se pudo registrar el retiro');
+    }
 
     mensaje.className = 'mensaje-recarga ok';
     mensaje.textContent = '✅ Solicitud de retiro enviada. Te avisaremos aquí cuando sea aprobada.';
@@ -993,12 +1013,9 @@ async function solicitarRecarga() {
   const contenedor = document.getElementById('listaMovimientos');
   contenedor.innerHTML = 'Cargando movimientos...';
 
-  const { data, error } = await supabaseClient
-    .from('billetera_movimientos')
-    .select('*')
-    .eq('usuario_id', usuario.id)
-    .order('creado_en', { ascending: false })
-    .limit(20);
+  const { data, error } = await supabaseClient.rpc('bingo_cliente_movimientos_seguro', {
+    p_token: usuario.token || ''
+  });
 
   if (error) {
     contenedor.innerHTML = 'No se pudieron cargar los movimientos.';
@@ -1026,15 +1043,14 @@ async function solicitarRecarga() {
       const usuario = requerirSesion();
       if (!usuario) return;
 
-      await cargarCuenta();
+      const inicial = await cargarCuenta();
+      ultimoEstadoCuenta = inicial?.estado || null;
       await restaurarDatosRetiro(usuario);
       iniciarTiempoRealRecargas(usuario);
     }
 
     window.addEventListener('beforeunload', () => {
-      if (canalRecargasCuenta) {
-        supabaseClient.removeChannel(canalRecargasCuenta);
-      }
+      if (canalRecargasCuenta) clearInterval(canalRecargasCuenta);
       clearTimeout(temporizadorNotificacionRecarga);
     });
 
