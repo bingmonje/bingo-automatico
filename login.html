@@ -137,6 +137,46 @@
       text-decoration: underline;
     }
 
+    .btn-olvido {
+      margin-top: 14px;
+      border: none;
+      background: transparent;
+      color: var(--secondary);
+      font-weight: 800;
+      cursor: pointer;
+      text-decoration: underline;
+      font-size: .96em;
+    }
+
+    .recuperacion-panel {
+      display: none;
+      margin-top: 22px;
+      padding: 22px;
+      border-radius: 18px;
+      background: rgba(0,0,0,.26);
+      border: 1px solid rgba(249,217,73,.32);
+      text-align: left;
+    }
+
+    .recuperacion-panel.active { display: block; }
+    .recuperacion-panel h3 { color: var(--secondary); margin-bottom: 8px; }
+    .recuperacion-panel > p { color: rgba(255,255,255,.72); margin-bottom: 18px; line-height: 1.45; }
+
+    .acciones-recuperacion {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .btn-cancelar-recuperacion {
+      border: 1px solid rgba(255,255,255,.25);
+      border-radius: 50px;
+      background: rgba(255,255,255,.08);
+      color: white;
+      font-weight: 800;
+      cursor: pointer;
+    }
+
     .mensaje-login {
       min-height: 24px;
       margin-top: 15px;
@@ -204,6 +244,41 @@
 
       <p id="mensajeLogin" class="mensaje-login"></p>
 
+      <button type="button" class="btn-olvido" onclick="mostrarRecuperacionPin()">
+        ¿Olvidaste tu PIN?
+      </button>
+
+      <div id="panelRecuperacionPin" class="recuperacion-panel" aria-hidden="true">
+        <h3>🔑 Recuperar acceso</h3>
+        <p>Confirma tus datos y crea un PIN nuevo. El administrador verificará la solicitud antes de activarlo.</p>
+
+        <div class="input-group">
+          <label for="cedulaRecuperacion">Cédula</label>
+          <input type="text" id="cedulaRecuperacion" placeholder="Ej: V-12345678" autocomplete="username">
+        </div>
+
+        <div class="input-group">
+          <label for="telefonoRecuperacion">Teléfono registrado</label>
+          <input type="text" id="telefonoRecuperacion" placeholder="Ej: 04141234567" inputmode="numeric" autocomplete="tel" maxlength="15">
+        </div>
+
+        <div class="input-group">
+          <label for="pinRecuperacion">PIN nuevo</label>
+          <input type="password" id="pinRecuperacion" placeholder="De 4 a 12 números" inputmode="numeric" autocomplete="new-password" maxlength="12">
+        </div>
+
+        <div class="input-group">
+          <label for="pinRecuperacionConfirmar">Confirmar PIN nuevo</label>
+          <input type="password" id="pinRecuperacionConfirmar" placeholder="Repite el PIN" inputmode="numeric" autocomplete="new-password" maxlength="12">
+        </div>
+
+        <div class="acciones-recuperacion">
+          <button id="btnSolicitarRecuperacion" type="button" class="btn-login" onclick="solicitarRecuperacionPin()">Enviar solicitud</button>
+          <button type="button" class="btn-cancelar-recuperacion" onclick="ocultarRecuperacionPin()">Cancelar</button>
+        </div>
+        <p id="mensajeRecuperacionPin" class="mensaje-login" style="text-align:center;"></p>
+      </div>
+
       <div class="login-links">
         ¿No tienes cuenta? <a href="registro.html">Registrarse</a>
       </div>
@@ -234,6 +309,91 @@
       return Array.from(new Uint8Array(hash))
         .map(byte => byte.toString(16).padStart(2, '0'))
         .join('');
+    }
+
+    function soloNumeros(valor, maximo = 15) {
+      return String(valor || '').replace(/\D/g, '').slice(0, maximo);
+    }
+
+    function mostrarRecuperacionPin() {
+      const panel = document.getElementById('panelRecuperacionPin');
+      panel.classList.add('active');
+      panel.setAttribute('aria-hidden', 'false');
+      document.getElementById('cedulaRecuperacion').value = document.getElementById('cedula').value;
+      document.getElementById('telefonoRecuperacion').focus();
+    }
+
+    function ocultarRecuperacionPin() {
+      const panel = document.getElementById('panelRecuperacionPin');
+      panel.classList.remove('active');
+      panel.setAttribute('aria-hidden', 'true');
+      document.getElementById('mensajeRecuperacionPin').textContent = '';
+    }
+
+    async function solicitarRecuperacionPin() {
+      const cedula = normalizarCedula(document.getElementById('cedulaRecuperacion').value);
+      const telefono = soloNumeros(document.getElementById('telefonoRecuperacion').value);
+      const pinNuevo = soloNumeros(document.getElementById('pinRecuperacion').value, 12);
+      const confirmarPin = soloNumeros(document.getElementById('pinRecuperacionConfirmar').value, 12);
+      const mensaje = document.getElementById('mensajeRecuperacionPin');
+      const boton = document.getElementById('btnSolicitarRecuperacion');
+
+      mensaje.textContent = '';
+      mensaje.className = 'mensaje-login';
+
+      if (!cedula || telefono.length < 10) {
+        mensaje.textContent = 'Ingresa la cédula y el teléfono registrado.';
+        mensaje.classList.add('error');
+        return;
+      }
+
+      if (!/^\d{4,12}$/.test(pinNuevo)) {
+        mensaje.textContent = 'El PIN nuevo debe tener entre 4 y 12 números.';
+        mensaje.classList.add('error');
+        return;
+      }
+
+      if (pinNuevo !== confirmarPin) {
+        mensaje.textContent = 'Los dos PIN no coinciden.';
+        mensaje.classList.add('error');
+        return;
+      }
+
+      boton.disabled = true;
+      boton.textContent = 'Enviando...';
+
+      try {
+        const pinHashNuevo = await generarPinHash(pinNuevo);
+        const { data, error } = await supabaseClient.rpc('bingo_solicitar_recuperacion_pin', {
+          p_cedula: cedula,
+          p_telefono: telefono,
+          p_pin_hash_nuevo: pinHashNuevo
+        });
+
+        if (error) throw error;
+
+        if (!data?.ok) {
+          mensaje.textContent = data?.codigo === 'datos_no_coinciden'
+            ? 'La cédula y el teléfono no coinciden con una cuenta activa.'
+            : 'No se pudo enviar la solicitud. Revisa los datos.';
+          mensaje.classList.add('error');
+          return;
+        }
+
+        document.getElementById('pinRecuperacion').value = '';
+        document.getElementById('pinRecuperacionConfirmar').value = '';
+        mensaje.textContent = '✅ Solicitud enviada. El administrador verificará tu identidad por WhatsApp antes de activar el PIN nuevo.';
+        mensaje.classList.add('ok');
+      } catch (error) {
+        console.error('Error solicitando recuperación:', error);
+        mensaje.textContent = error?.code === 'PGRST202'
+          ? 'La recuperación de PIN todavía no está activada en Supabase. Comunícate con el administrador.'
+          : 'No se pudo enviar la solicitud de recuperación. Intenta nuevamente.';
+        mensaje.classList.add('error');
+      } finally {
+        boton.disabled = false;
+        boton.textContent = 'Enviar solicitud';
+      }
     }
 
     async function login() {
@@ -291,6 +451,19 @@
 
     document.getElementById('cedula').addEventListener('keydown', function(e) {
       if (e.key === 'Enter') login();
+    });
+
+    document.getElementById('telefonoRecuperacion').addEventListener('input', function() {
+      this.value = soloNumeros(this.value);
+    });
+
+    ['pinRecuperacion', 'pinRecuperacionConfirmar'].forEach(id => {
+      document.getElementById(id).addEventListener('input', function() {
+        this.value = soloNumeros(this.value, 12);
+      });
+      document.getElementById(id).addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') solicitarRecuperacionPin();
+      });
     });
   </script>
 
