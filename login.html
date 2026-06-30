@@ -363,7 +363,7 @@
       boton.textContent = 'Enviando...';
 
       try {
-        const pinHashNuevo = await generarPinHash(pinNuevo);
+        const pinHashNuevo = pinNuevo;
         const { data, error } = await supabaseClient.rpc('bingo_solicitar_recuperacion_pin', {
           p_cedula: cedula,
           p_telefono: telefono,
@@ -410,34 +410,38 @@
         return;
       }
 
-      const { data, error } = await supabaseClient
-        .from('usuarios_bingo')
-        .select('*')
-        .eq('cedula', cedula)
-        .maybeSingle();
-
-      if (error || !data) {
-        mensaje.textContent = 'Usuario no encontrado.';
-        mensaje.classList.add('error');
-        return;
-      }
-
       const pinHash = await generarPinHash(pin);
-      if (data.pin_hash !== pinHash && data.pin_hash !== pin) {
-        mensaje.textContent = 'PIN incorrecto.';
+      const { data, error } = await supabaseClient.rpc('bingo_login_cliente_seguro', {
+        p_cedula: cedula,
+        p_pin: pin,
+        p_pin_sha256: pinHash
+      });
+
+      if (error) {
+        mensaje.textContent = 'No se pudo validar el acceso.';
         mensaje.classList.add('error');
         return;
       }
+
+      if (!data?.ok) {
+        mensaje.textContent = data?.codigo === 'rate_limit'
+          ? `Demasiados intentos. Espera ${Math.ceil(Number(data.reintentar_en || 60) / 60)} minuto(s).`
+          : 'Cédula o PIN incorrectos.';
+        mensaje.classList.add('error');
+        return;
+      }
+
+      const usuario = data.usuario;
 
       localStorage.setItem('usuario_bingo', JSON.stringify({
-        id: data.id,
-        nombre: data.nombre,
-        cedula: data.cedula,
-        telefono: data.telefono,
-        email: data.email || ''
+        id: usuario.id,
+        nombre: usuario.nombre,
+        cedula: usuario.cedula,
+        telefono: usuario.telefono,
+        token: data.token
       }));
 
-      mensaje.textContent = 'Bienvenido ' + data.nombre;
+      mensaje.textContent = 'Bienvenido ' + usuario.nombre;
       mensaje.classList.add('ok');
 
       setTimeout(() => {
