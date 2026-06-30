@@ -761,6 +761,59 @@
         )
         .subscribe();
     }
+async function decodificarImagenRecarga(file) {
+  if ('createImageBitmap' in window) {
+    try {
+      return await createImageBitmap(file, { imageOrientation: 'from-image' });
+    } catch (_) {}
+  }
+
+  return new Promise((resolve, reject) => {
+    const lector = new FileReader();
+    lector.onerror = () => reject(new Error('No se pudo leer la imagen.'));
+    lector.onload = () => {
+      const imagen = new Image();
+      imagen.onload = () => resolve(imagen);
+      imagen.onerror = () => reject(new Error('El comprobante no es una imagen válida.'));
+      imagen.src = lector.result;
+    };
+    lector.readAsDataURL(file);
+  });
+}
+
+async function convertirComprobanteAWebP(file) {
+  const imagen = await decodificarImagenRecarga(file);
+  const anchoOriginal = imagen.width || imagen.naturalWidth;
+  const altoOriginal = imagen.height || imagen.naturalHeight;
+
+  if (!anchoOriginal || !altoOriginal) {
+    if (typeof imagen.close === 'function') imagen.close();
+    throw new Error('No se pudieron leer las dimensiones de la imagen.');
+  }
+
+  const dimensionMaxima = 1600;
+  const escala = Math.min(1, dimensionMaxima / Math.max(anchoOriginal, altoOriginal));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(anchoOriginal * escala));
+  canvas.height = Math.max(1, Math.round(altoOriginal * escala));
+
+  const contexto = canvas.getContext('2d', { alpha: false });
+  contexto.fillStyle = '#ffffff';
+  contexto.fillRect(0, 0, canvas.width, canvas.height);
+  contexto.drawImage(imagen, 0, 0, canvas.width, canvas.height);
+  if (typeof imagen.close === 'function') imagen.close();
+
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+  canvas.width = 1;
+  canvas.height = 1;
+
+  if (!blob || blob.type !== 'image/webp') {
+    throw new Error('Este navegador no pudo convertir la imagen a WebP.');
+  }
+
+  return blob;
+}
+
 async function solicitarRecarga() {
   const usuario = requerirSesion();
   if (!usuario) return;
@@ -799,21 +852,27 @@ async function solicitarRecarga() {
     return;
   }
 
-  if (file.size > 5 * 1024 * 1024) {
+  if (file.size > 15 * 1024 * 1024) {
     mensaje.className = 'mensaje-recarga warn';
-    mensaje.textContent = 'El archivo es muy grande.';
+    mensaje.textContent = 'La imagen supera el máximo de 15 MB.';
     return;
   }
 
   btn.disabled = true;
-  btn.textContent = 'Enviando...';
+  btn.textContent = 'Convirtiendo a WebP...';
 
   try {
-    const fileName = `recarga_${usuario.id}_${Date.now()}`;
+    const archivoWebP = await convertirComprobanteAWebP(file);
+    const fileName = `recarga_${usuario.id}_${Date.now()}.webp`;
+    btn.textContent = 'Enviando...';
 
     const { error: uploadError } = await supabaseClient.storage
       .from('comprobantes')
-      .upload(fileName, file);
+      .upload(fileName, archivoWebP, {
+        contentType: 'image/webp',
+        cacheControl: '3600',
+        upsert: false
+      });
 
     if (uploadError) throw uploadError;
 
@@ -843,7 +902,7 @@ async function solicitarRecarga() {
   } catch (error) {
     console.error(error);
     mensaje.className = 'mensaje-recarga error';
-    mensaje.textContent = '❌ Error enviando recarga';
+    mensaje.textContent = `❌ Error enviando recarga: ${error.message || 'intenta nuevamente'}`;
   } finally {
     btn.disabled = false;
     btn.textContent = 'Enviar recarga';
