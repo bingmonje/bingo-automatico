@@ -1592,7 +1592,16 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
       };
 
       pintar();
-      if (!cuentaJuegoTimer) cuentaJuegoTimer = setInterval(pintar, 1000);
+      const requiereCuentaRegresiva =
+        (juegoCuentaActual?.estado === 'jugando' && juegoCuentaActual?.fin_estimado_en) ||
+        (juegoCuentaActual?.estado === 'esperando' && juegoCuentaActual?.proximo_juego_en);
+
+      if (requiereCuentaRegresiva && !cuentaJuegoTimer) {
+        cuentaJuegoTimer = setInterval(pintar, 1000);
+      } else if (!requiereCuentaRegresiva && cuentaJuegoTimer) {
+        clearInterval(cuentaJuegoTimer);
+        cuentaJuegoTimer = null;
+      }
     }
 
     function limpiarRondaAnteriorEnCliente() {
