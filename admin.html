@@ -623,7 +623,7 @@
       <p style="color: rgba(255,255,255,0.6); margin-bottom: 30px;">
         Bingo Andino 75 - Panel de Control
       </p>
-      <input type="email" id="adminEmail" placeholder="Correo" value="admin@bingoandino75.com">
+      <input type="text" id="adminUsuario" placeholder="Usuario administrador" autocomplete="username">
       <input type="password" id="adminPass" placeholder="Contraseña">
       <button class="btn-login" onclick="login()">ACCEDER</button>
     </div>
@@ -857,12 +857,11 @@
                 <th>Cliente</th>
                 <th>Cédula</th>
                 <th>Teléfono</th>
-                <th>Correo</th>
                 <th>Saldo actual</th>
               </tr>
             </thead>
             <tbody id="tablaClientesAdmin">
-              <tr><td colspan="5" style="text-align:center; padding:40px;">Abre esta sección para cargar los clientes.</td></tr>
+              <tr><td colspan="4" style="text-align:center; padding:40px;">Abre esta sección para cargar los clientes.</td></tr>
             </tbody>
           </table>
         </div>
@@ -1036,6 +1035,12 @@
     let adminPendientesTimer = null;
     let recuperacionPinDisponible = true;
     let clientesSaldoAdmin = [];
+    let adminSessionToken = sessionStorage.getItem('bingo_admin_token') || '';
+
+    function tokenAdmin() {
+      if (!adminSessionToken) throw new Error('Sesión administrativa vencida');
+      return adminSessionToken;
+    }
 
     function shuffle(array) {
       for (let i = array.length - 1; i > 0; i--) {
@@ -1054,20 +1059,20 @@
 
     async function actualizarContadoresPendientes() {
       const consultaRecuperaciones = recuperacionPinDisponible
-        ? supabaseClient.rpc('bingo_admin_listar_recuperaciones_pin')
+        ? supabaseClient.rpc('bingo_admin_listar_recuperaciones_seguro', { p_token: tokenAdmin() })
         : Promise.resolve({ data: [], error: null });
 
       const consultas = await Promise.all([
-        supabaseClient.from('apartados_temp').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
-        supabaseClient.from('recargas_bingo').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
-        supabaseClient.from('retiros_bingo').select('id', { count: 'exact', head: true }).eq('estado', 'pendiente'),
+        supabaseClient.rpc('bingo_admin_listar_compras_seguro', { p_token: tokenAdmin() }),
+        supabaseClient.rpc('bingo_admin_listar_recargas_seguro', { p_token: tokenAdmin() }),
+        supabaseClient.rpc('bingo_admin_listar_retiros_seguro', { p_token: tokenAdmin() }),
         consultaRecuperaciones
       ]);
 
       const [compras, recargas, retiros, recuperaciones] = consultas;
-      if (!compras.error) pintarContadorPendiente('badgeCompras', compras.count);
-      if (!recargas.error) pintarContadorPendiente('badgeRecargas', recargas.count);
-      if (!retiros.error) pintarContadorPendiente('badgeRetiros', retiros.count);
+      if (!compras.error) pintarContadorPendiente('badgeCompras', (compras.data || []).filter(c => c.estado === 'pendiente').length);
+      if (!recargas.error) pintarContadorPendiente('badgeRecargas', recargas.data?.length || 0);
+      if (!retiros.error) pintarContadorPendiente('badgeRetiros', retiros.data?.length || 0);
       if (!recuperaciones.error) {
         pintarContadorPendiente('badgeRecuperaciones', recuperaciones.data?.length || 0);
       } else if (recuperaciones.error.code === 'PGRST202') {
@@ -1078,19 +1083,9 @@
   const contenedor = document.getElementById('listaRecargas');
   contenedor.innerHTML = 'Cargando...';
 
-  const { data, error } = await supabaseClient
-    .from('recargas_bingo')
-    .select(`
-      id,
-      monto,
-      referencia_pago,
-      comprobante_url,
-      estado,
-      solicitado_en,
-      usuarios_bingo(nombre, cedula)
-    `)
-    .eq('estado', 'pendiente')
-    .order('solicitado_en', { ascending: false });
+  const { data, error } = await supabaseClient.rpc('bingo_admin_listar_recargas_seguro', {
+    p_token: tokenAdmin()
+  });
 
   if (error) {
     console.error(error);
@@ -1108,8 +1103,8 @@
 
   contenedor.innerHTML = data.map(r => `
     <div class="card-recarga" id="recarga-${r.id}">
-      <p><strong>${r.usuarios_bingo?.nombre}</strong></p>
-      <p>Cédula: ${r.usuarios_bingo?.cedula}</p>
+      <p><strong>${escaparHtmlAdmin(r.nombre || 'Jugador')}</strong></p>
+      <p>Cédula: ${numeroNormalAdmin(r.cedula, 12) || '-'}</p>
       <p>Monto: ${Number(r.monto).toFixed(2)} Bs</p>
       <p>Ref: ${r.referencia_pago}</p>
 
@@ -1180,7 +1175,9 @@ async function cargarRecuperacionesPin() {
   if (!contenedor) return;
   contenedor.innerHTML = 'Cargando solicitudes...';
 
-  const { data, error } = await supabaseClient.rpc('bingo_admin_listar_recuperaciones_pin');
+  const { data, error } = await supabaseClient.rpc('bingo_admin_listar_recuperaciones_seguro', {
+    p_token: tokenAdmin()
+  });
 
   if (error) {
     console.error('Error cargando recuperaciones de PIN:', error);
@@ -1233,7 +1230,8 @@ async function cargarRecuperacionesPin() {
 async function aprobarRecuperacionPin(id) {
   if (!confirm('¿Confirmaste por WhatsApp la identidad de este cliente? Al aprobar, su PIN anterior dejará de funcionar.')) return;
 
-  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_recuperacion_pin', {
+  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_recuperacion_seguro', {
+    p_token: tokenAdmin(),
     p_solicitud_id: id
   });
 
@@ -1250,7 +1248,8 @@ async function aprobarRecuperacionPin(id) {
 async function rechazarRecuperacionPin(id) {
   if (!confirm('¿Rechazar esta solicitud de recuperación?')) return;
 
-  const { data, error } = await supabaseClient.rpc('bingo_admin_rechazar_recuperacion_pin', {
+  const { data, error } = await supabaseClient.rpc('bingo_admin_rechazar_recuperacion_seguro', {
+    p_token: tokenAdmin(),
     p_solicitud_id: id
   });
 
@@ -1267,19 +1266,9 @@ async function rechazarRecuperacionPin(id) {
   const contenedor = document.getElementById('listaRetiros');
   contenedor.innerHTML = 'Cargando...';
 
-  const { data, error } = await supabaseClient
-    .from('retiros_bingo')
-    .select(`
-      id,
-      monto,
-      telefono,
-      cedula_titular,
-      banco,
-      solicitado_en,
-      usuarios_bingo(nombre, cedula)
-    `)
-    .eq('estado', 'pendiente')
-    .order('solicitado_en', { ascending: false });
+  const { data, error } = await supabaseClient.rpc('bingo_admin_listar_retiros_seguro', {
+    p_token: tokenAdmin()
+  });
 
   if (error) {
     contenedor.innerHTML = 'Error cargando retiros';
@@ -1296,8 +1285,8 @@ async function rechazarRecuperacionPin(id) {
 
   contenedor.innerHTML = data.map(r => {
     const contactos = decodificarContactosRetiroAdmin(r.telefono);
-    const nombre = escaparHtmlAdmin(r.usuarios_bingo?.nombre || 'Jugador');
-    const cedulaUsuario = numeroNormalAdmin(r.usuarios_bingo?.cedula, 12) || '-';
+    const nombre = escaparHtmlAdmin(r.nombre || 'Jugador');
+    const cedulaUsuario = numeroNormalAdmin(r.cedula, 12) || '-';
     const cedulaTitular = numeroNormalAdmin(r.cedula_titular, 12) || '-';
     const banco = escaparHtmlAdmin(r.banco || '-');
     const monto = Number(r.monto || 0).toFixed(2);
@@ -1327,7 +1316,8 @@ async function rechazarRecuperacionPin(id) {
 }
     
     async function aprobarRetiro(id) {
-  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_retiro', {
+  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_retiro_seguro', {
+    p_token: tokenAdmin(),
     p_retiro_id: id
   });
 
@@ -1346,7 +1336,8 @@ async function rechazarRecuperacionPin(id) {
 }
     
     async function rechazarRetiro(id) {
-  const { error } = await supabaseClient.rpc('bingo_admin_rechazar_retiro', {
+  const { error } = await supabaseClient.rpc('bingo_admin_rechazar_retiro_seguro', {
+    p_token: tokenAdmin(),
     p_retiro_id: id
   });
 
@@ -1361,7 +1352,8 @@ async function rechazarRecuperacionPin(id) {
 }
     
     async function aprobarRecarga(recargaId) {
-  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_recarga', {
+  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_recarga_seguro', {
+    p_token: tokenAdmin(),
     p_recarga_id: recargaId
   });
 
@@ -1375,7 +1367,8 @@ async function rechazarRecuperacionPin(id) {
   alert('Recarga aprobada correctamente');
 }
     async function rechazarRecarga(recargaId) {
-  const { error } = await supabaseClient.rpc('bingo_admin_rechazar_recarga', {
+  const { error } = await supabaseClient.rpc('bingo_admin_rechazar_recarga_seguro', {
+    p_token: tokenAdmin(),
     p_recarga_id: recargaId
   });
 
@@ -1389,24 +1382,73 @@ async function rechazarRecuperacionPin(id) {
   alert('Recarga rechazada');
 }
 
-    function login() {
-      const email = document.getElementById('adminEmail').value;
+    async function login() {
+      const usuario = document.getElementById('adminUsuario').value.trim();
       const pass = document.getElementById('adminPass').value;
+      const boton = document.querySelector('#loginScreen .btn-login');
 
-      if (email === 'admin@bingoandino75.com' && pass.length > 0) {
-        document.getElementById('loginScreen').style.display = 'none';
-        document.getElementById('dashboard').style.display = 'block';
-        initAdmin();
-      } else {
+      if (!usuario || !pass) {
         alert('Credenciales incorrectas');
+        return;
       }
+
+      boton.disabled = true;
+      boton.textContent = 'VALIDANDO...';
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_login_seguro', {
+        p_usuario: usuario,
+        p_clave: pass
+      });
+
+      boton.disabled = false;
+      boton.textContent = 'ACCEDER';
+      document.getElementById('adminPass').value = '';
+
+      if (error || !data?.ok) {
+        const detalle = data?.codigo === 'rate_limit'
+          ? 'Demasiados intentos. Intenta más tarde.'
+          : 'Credenciales incorrectas';
+        alert(detalle);
+        return;
+      }
+
+      adminSessionToken = data.token;
+      sessionStorage.setItem('bingo_admin_token', adminSessionToken);
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      await initAdmin();
     }
 
-    function logout() {
+    async function logout() {
       if (gameTimerInterval) clearInterval(gameTimerInterval);
       if (programacionTimer) clearInterval(programacionTimer);
       if (adminPendientesTimer) clearInterval(adminPendientesTimer);
+      if (adminSessionToken) {
+        try {
+          await supabaseClient.rpc('bingo_admin_logout_seguro', { p_token: adminSessionToken });
+        } catch (_) {}
+      }
+      adminSessionToken = '';
+      sessionStorage.removeItem('bingo_admin_token');
       location.reload();
+    }
+
+    async function restaurarSesionAdmin() {
+      if (!adminSessionToken) return;
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_validar_sesion_seguro', {
+        p_token: adminSessionToken
+      });
+
+      if (error || !data?.ok) {
+        adminSessionToken = '';
+        sessionStorage.removeItem('bingo_admin_token');
+        return;
+      }
+
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      await initAdmin();
     }
 
     function showSection(section, el) {
@@ -1594,7 +1636,7 @@ function renderizarClientesAdmin(clientes) {
   if (!tbody) return;
 
   if (!clientes.length) {
-    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px;">No se encontraron clientes.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">No se encontraron clientes.</td></tr>';
     return;
   }
 
@@ -1603,7 +1645,6 @@ function renderizarClientesAdmin(clientes) {
       <td><strong>${escaparHtmlAdmin(cliente.nombre || 'Sin nombre')}</strong></td>
       <td>${escaparHtmlAdmin(numeroNormalAdmin(cliente.cedula, 12) || '-')}</td>
       <td>${escaparHtmlAdmin(numeroNormalAdmin(cliente.telefono) || '-')}</td>
-      <td>${escaparHtmlAdmin(cliente.email || '-')}</td>
       <td><strong>${Number(cliente.saldo || 0).toFixed(2)} Bs</strong></td>
     </tr>
   `).join('');
@@ -1617,7 +1658,7 @@ function filtrarClientesAdmin() {
   }
 
   const filtrados = clientesSaldoAdmin.filter(cliente =>
-    textoBusquedaAdmin(`${cliente.nombre} ${cliente.cedula} ${cliente.telefono} ${cliente.email}`).includes(termino)
+    textoBusquedaAdmin(`${cliente.nombre} ${cliente.cedula} ${cliente.telefono}`).includes(termino)
   );
   renderizarClientesAdmin(filtrados);
 }
@@ -1625,22 +1666,14 @@ function filtrarClientesAdmin() {
 async function cargarClientesSaldos() {
   const tbody = document.getElementById('tablaClientesAdmin');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:40px;">Cargando clientes y saldos...</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">Cargando clientes y saldos...</td></tr>';
 
   try {
-    const [usuarios, billeteras] = await Promise.all([
-      cargarFilasPaginadasAdmin('usuarios_bingo', 'id,nombre,cedula,telefono,email', 'id'),
-      cargarFilasPaginadasAdmin('billeteras_bingo', 'usuario_id,saldo', 'usuario_id')
-    ]);
-
-    const saldoPorUsuario = new Map(
-      billeteras.map(item => [String(item.usuario_id), Number(item.saldo || 0)])
-    );
-
-    clientesSaldoAdmin = usuarios.map(usuario => ({
-      ...usuario,
-      saldo: saldoPorUsuario.get(String(usuario.id)) || 0
-    }));
+    const { data, error } = await supabaseClient.rpc('bingo_admin_listar_clientes_seguro', {
+      p_token: tokenAdmin()
+    });
+    if (error) throw error;
+    clientesSaldoAdmin = data || [];
 
     const saldoTotal = clientesSaldoAdmin.reduce((total, cliente) => total + Number(cliente.saldo || 0), 0);
     document.getElementById('totalClientesAdmin').textContent = `${clientesSaldoAdmin.length} cliente(s)`;
@@ -1648,7 +1681,7 @@ async function cargarClientesSaldos() {
     filtrarClientesAdmin();
   } catch (error) {
     console.error('Error cargando clientes y saldos:', error);
-    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center; padding:40px;">No se pudieron cargar los clientes: ${escaparHtmlAdmin(error.message || 'error desconocido')}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px;">No se pudieron cargar los clientes: ${escaparHtmlAdmin(error.message || 'error desconocido')}</td></tr>`;
   }
 }
 
@@ -1871,9 +1904,6 @@ if (payload.new?.ganador_id && !payload.old?.ganador_id) {
     }
    
     async function startAutoGame() {
-      const resultadoAprobacion = await aprobarComprasPendientes();
-      if (resultadoAprobacion === false) return;
-
       if (!confirm('¿Iniciar nuevo juego automático?')) return;
 document.getElementById('winnerDisplay').classList.remove('active');
       document.getElementById('winnerFila').classList.remove('active');
@@ -1881,7 +1911,9 @@ document.getElementById('winnerColumna').classList.remove('active');
 colaGanadores = [];
 mostrando = false;
 
-      const { data, error } = await supabaseClient.rpc('bingo_admin_iniciar_juego');
+      const { data, error } = await supabaseClient.rpc('bingo_admin_iniciar_juego_seguro', {
+        p_token: tokenAdmin()
+      });
 
       if (error) {
         alert('Error: ' + error.message);
@@ -2007,7 +2039,8 @@ mostrando = false;
       document.getElementById('btnDrawBall').disabled = true;
 
       try {
-        const { data, error } = await supabaseClient.rpc('bingo_admin_sortear_bola_aleatoria', {
+        const { data, error } = await supabaseClient.rpc('bingo_admin_sortear_bola_aleatoria_seguro', {
+          p_token: tokenAdmin(),
           p_juego_id: currentGame.id
         });
 
@@ -2032,7 +2065,8 @@ mostrando = false;
       const btn = document.getElementById('btnAutoMode');
       btn.disabled = true;
 
-      const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_auto_juego', {
+      const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_auto_juego_seguro', {
+        p_token: tokenAdmin(),
         p_juego_id: currentGame.id,
         p_activo: !currentGame.auto_bolas
       });
@@ -2051,7 +2085,8 @@ mostrando = false;
     async function stopAutoGame() {
       if (!confirm('¿Finalizar juego?')) return;
 
-      const { data, error } = await supabaseClient.rpc('bingo_admin_finalizar_juego', {
+      const { data, error } = await supabaseClient.rpc('bingo_admin_finalizar_juego_seguro', {
+        p_token: tokenAdmin(),
         p_juego_id: currentGame.id
       });
 
@@ -2229,19 +2264,18 @@ mostrando = false;
         return;
       }
 
-      const { error } = await supabaseClient
-        .from('promociones_cartones')
-        .insert([{
-          nombre,
-          cantidad,
-          precio,
-          descripcion: desc,
-          activa: true,
-          created_at: new Date().toISOString()
-        }]);
+      const { data, error } = await supabaseClient.rpc('bingo_admin_promocion_seguro', {
+        p_token: tokenAdmin(),
+        p_accion: 'crear',
+        p_nombre: nombre,
+        p_cantidad: cantidad,
+        p_precio: precio,
+        p_descripcion: desc,
+        p_activa: true
+      });
 
-      if (error) {
-        alert('Error: ' + error.message);
+      if (error || !data?.ok) {
+        alert('Error: ' + (error?.message || data?.codigo || 'error desconocido'));
       } else {
         alert('Promoción creada exitosamente');
         cargarPromociones();
@@ -2292,12 +2326,13 @@ async function eliminarPromo(id) {
 
   if (!confirmar) return;
 
-  const { error } = await supabaseClient
-    .from('promociones_cartones')
-    .delete()
-    .eq('id', id);
+  const { data, error } = await supabaseClient.rpc('bingo_admin_promocion_seguro', {
+    p_token: tokenAdmin(),
+    p_accion: 'eliminar',
+    p_id: id
+  });
 
-  if (error) {
+  if (error || !data?.ok) {
     console.error('Error eliminando promoción:', error);
     alert('No se pudo eliminar: ' + error.message);
     return;
@@ -2309,11 +2344,12 @@ async function eliminarPromo(id) {
    async function togglePromo(id, activa) {
   console.log('togglePromo ->', { id, activa });
 
-  const { data, error } = await supabaseClient
-    .from('promociones_cartones')
-    .update({ activa: Boolean(activa) })
-    .eq('id', id)
-    .select();
+  const { data, error } = await supabaseClient.rpc('bingo_admin_promocion_seguro', {
+    p_token: tokenAdmin(),
+    p_accion: 'activar',
+    p_id: id,
+    p_activa: Boolean(activa)
+  });
 
   console.log('respuesta update ->', { data, error });
 
@@ -2322,7 +2358,7 @@ async function eliminarPromo(id) {
     return;
   }
 
-  if (!data || data.length === 0) {
+  if (!data?.ok) {
     alert('No se actualizó ninguna fila. Revisa la policy UPDATE o el id.');
     return;
   }
@@ -2342,28 +2378,20 @@ async function eliminarPromo(id) {
         : '';
 
       if (v.estado === 'pendiente') {
-        return `
-          ${verBtn}
-          <button onclick="aprobarVenta(${v.id})" style="padding: 8px 15px; background: var(--success); border: none; border-radius: 5px; color: white; cursor: pointer; margin-right: 5px;">✓</button>
-          <button onclick="rechazarVenta(${v.id})" style="padding: 8px 15px; background: var(--danger); border: none; border-radius: 5px; color: white; cursor: pointer;">✕</button>
-        `;
+        return `${verBtn}<span style="opacity:.7;">Compra antigua: aprobación deshabilitada</span>`;
       }
 
       if (v.estado === 'aprobado') {
-        return `
-          ${verBtn}
-          <button onclick="rechazarVenta(${v.id})" style="padding: 8px 15px; background: var(--danger); border: none; border-radius: 5px; color: white; cursor: pointer;">Liberar</button>
-        `;
+        return verBtn || '<span style="opacity:.6;">Sin acciones</span>';
       }
 
       return verBtn || '<span style="opacity: 0.6;">Sin acciones</span>';
     }
 
     async function cargarVentas() {
-      const { data, error } = await supabaseClient
-        .from('apartados_temp')
-        .select('*')
-        .order('id', { ascending: false });
+      const { data, error } = await supabaseClient.rpc('bingo_admin_listar_compras_seguro', {
+        p_token: tokenAdmin()
+      });
 
       if (error) {
         console.error('Error cargando ventas:', error);
@@ -2526,7 +2554,8 @@ async function guardarProgramacionAutomatica() {
     return;
   }
 
-  const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_ciclo', {
+  const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_ciclo_seguro', {
+    p_token: tokenAdmin(),
     p_activo: true,
     p_minutos_entre_juegos: minutos,
     p_segundos_bola: segundos
@@ -2548,7 +2577,8 @@ async function detenerProgramacionAutomatica() {
   const minutos = parseInt(document.getElementById('minutosEntreJuegosInput')?.value || '60', 10);
   const segundos = parseInt(document.getElementById('segundosEntreBolasInput')?.value || '5', 10);
 
-  const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_ciclo', {
+  const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_ciclo_seguro', {
+    p_token: tokenAdmin(),
     p_activo: false,
     p_minutos_entre_juegos: Math.max(1, Math.min(1440, minutos || 60)),
     p_segundos_bola: Math.max(5, Math.min(60, segundos || 5))
@@ -2631,14 +2661,13 @@ async function cargarAjustes() {
     return;
   }
 
-  const { error } = await supabaseClient
-    .from('configuracion')
-    .upsert(
-      [{ clave: 'rotacion_cartones', valor: String(rotacion) }],
-      { onConflict: 'clave' }
-    );
+  const { data, error } = await supabaseClient.rpc('bingo_admin_guardar_config_seguro', {
+    p_token: tokenAdmin(),
+    p_clave: 'rotacion_cartones',
+    p_valor: String(rotacion)
+  });
 
-  if (error) {
+  if (error || !data?.ok) {
     console.error('Error guardando rotación:', error);
     alert('No se pudo guardar la rotación');
     return;
@@ -2669,34 +2698,14 @@ async function cargarAjustes() {
 
       const valor = precio.toFixed(2);
 
-      const { data: existente, error: buscarError } = await supabaseClient
-        .from('configuracion')
-        .select('clave')
-        .eq('clave', 'precio_carton')
-        .maybeSingle();
+      const { data, error } = await supabaseClient.rpc('bingo_admin_guardar_config_seguro', {
+        p_token: tokenAdmin(),
+        p_clave: 'precio_carton',
+        p_valor: valor
+      });
 
-      if (buscarError) {
-        alert('Error consultando configuración: ' + buscarError.message);
-        return;
-      }
-
-      let errorGuardar = null;
-
-      if (existente) {
-        const { error } = await supabaseClient
-          .from('configuracion')
-          .update({ valor })
-          .eq('clave', 'precio_carton');
-        errorGuardar = error;
-      } else {
-        const { error } = await supabaseClient
-          .from('configuracion')
-          .insert([{ clave: 'precio_carton', valor }]);
-        errorGuardar = error;
-      }
-
-      if (errorGuardar) {
-        alert('Error guardando precio: ' + errorGuardar.message);
+      if (error || !data?.ok) {
+        alert('Error guardando precio: ' + (error?.message || data?.codigo || 'error desconocido'));
         return;
       }
 
@@ -2740,14 +2749,13 @@ async function cargarAjustes() {
     return;
   }
 
-  const { error } = await supabaseClient
-    .from('configuracion')
-    .upsert({
-      clave: 'cantidad_cartones_disponibles',
-      valor: String(cantidad)
-    }, { onConflict: 'clave' });
+  const { data, error } = await supabaseClient.rpc('bingo_admin_guardar_config_seguro', {
+    p_token: tokenAdmin(),
+    p_clave: 'cantidad_cartones_disponibles',
+    p_valor: String(cantidad)
+  });
 
-  if (error) {
+  if (error || !data?.ok) {
     console.error('Error guardando cantidad de cartones:', error);
     alert('No se pudo guardar la cantidad');
     return;
@@ -2835,7 +2843,9 @@ async function cargarAjustes() {
         errores.push('No se pudieron identificar los comprobantes pendientes: ' + error.message);
       }
 
-      const { data: reinicio, error: reinicioError } = await supabaseClient.rpc('bingo_admin_reiniciar_ventas');
+      const { data: reinicio, error: reinicioError } = await supabaseClient.rpc('bingo_admin_reiniciar_ventas_seguro', {
+        p_token: tokenAdmin()
+      });
 
       if (reinicioError || !reinicio?.ok) {
         errores.push('No se pudo reiniciar el sistema de cartones: ' +
@@ -2878,6 +2888,8 @@ ${errores.join('\n')}`);
 
       alert(`Reinicio completado. Todos los cartones quedaron disponibles nuevamente.\nComprobantes pendientes eliminados: ${comprobantesEliminados}.`);
     }
+
+    restaurarSesionAdmin();
 
     window.addEventListener('beforeunload', () => {
       if (gameTimerInterval) clearInterval(gameTimerInterval);
