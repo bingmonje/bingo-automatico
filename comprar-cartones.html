@@ -868,10 +868,6 @@
           <label>Cédula de identidad</label>
           <input type="text" id="cedulaComprador" placeholder="Ej: V-12345678">
         </div>
-        <div class="input-group">
-          <label>Correo electrónico (opcional)</label>
-          <input type="email" id="emailComprador" placeholder="Ej: usuario@email.com">
-        </div>
       </div>
       
       <div style="text-align: center; margin-top: 40px;">
@@ -1189,9 +1185,9 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
   btn.textContent = 'Procesando...';
 
   try {
-    const { data, error } = await supabaseClient.rpc('bingo_pagar_con_saldo', {
-      p_apartado_id: miApartadoId,
-      p_usuario_id: usuario.id
+    const { data, error } = await supabaseClient.rpc('bingo_pagar_con_saldo_seguro', {
+      p_token: usuario.token || '',
+      p_apartado_id: miApartadoId
     });
 
     if (error) throw error;
@@ -1313,19 +1309,21 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
   const usuario = JSON.parse(localStorage.getItem('usuario_bingo') || 'null');
   if (!usuario) return 0;
 
-  const { data, error } = await supabaseClient
-    .from('billeteras_bingo')
-    .select('saldo')
-    .eq('usuario_id', usuario.id)
-    .maybeSingle();
+  const { data, error } = await supabaseClient.rpc('bingo_cliente_cuenta_segura', {
+    p_token: usuario.token || ''
+  });
 
-  if (error) {
+  if (error || !data?.ok) {
     console.error('Error cargando saldo del usuario:', error);
+    if (data?.codigo === 'sesion_invalida') {
+      localStorage.removeItem('usuario_bingo');
+      window.location.href = 'login.html';
+    }
     document.getElementById('saldoDisponibleCompra').textContent = 'Error';
     return 0;
   }
 
-  const saldo = Number(data?.saldo || 0);
+  const saldo = Number(data.saldo || 0);
   document.getElementById('saldoDisponibleCompra').textContent = `${saldo.toFixed(2)} Bs`;
   return saldo;
 }
@@ -1528,14 +1526,13 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       const nombre = document.getElementById('nombreComprador').value.trim();
       const telefono = document.getElementById('telefonoComprador').value.trim();
       const cedula = normalizarCedula(document.getElementById('cedulaComprador').value);
-      const email = document.getElementById('emailComprador').value.trim();
 
       if (!nombre || !telefono || !cedula) {
         alert('Completa todos los campos obligatorios');
         return;
       }
 
-      datosComprador = { nombre, telefono, cedula, email };
+      datosComprador = { nombre, telefono, cedula };
       document.getElementById('cedulaComprador').value = cedula;
       sessionStorage.setItem('nombreComprador', nombre);
       sessionStorage.setItem('cedulaComprador', cedula);
@@ -1933,14 +1930,9 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
           return;
         }
 
-        const { data, error } = await supabaseClient.rpc('bingo_reservar_cartones', {
-          p_usuario_id: usuario.id,
-          p_nombre: datosComprador.nombre,
-          p_telefono: datosComprador.telefono,
-          p_cedula: datosComprador.cedula,
-          p_email: datosComprador.email || '',
+        const { data, error } = await supabaseClient.rpc('bingo_reservar_cartones_seguro', {
+          p_token: usuario.token || '',
           p_cartones: cartonesArray,
-          p_precio_total: datosComprador.precio_total,
           p_promocion_id: datosComprador.promocion_id || null
         });
         if (error) throw error;
@@ -2012,7 +2004,9 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       document.getElementById('apartadoBanner').classList.remove('activo');
 
       try {
-        const { error } = await supabaseClient.rpc('bingo_liberar_reserva', {
+        const usuario = obtenerUsuarioSesion();
+        const { error } = await supabaseClient.rpc('bingo_liberar_reserva_seguro', {
+          p_token: usuario?.token || '',
           p_apartado_id: apartadoId
         });
         if (error) throw error;
