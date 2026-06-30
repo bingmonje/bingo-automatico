@@ -244,6 +244,12 @@
       animation: aparecerRecarga .35s ease;
     }
 
+    .notificacion-recarga.retiro {
+      border-color: rgba(52,152,219,0.6);
+      background: rgba(52,152,219,0.18);
+      color: #dff3ff;
+    }
+
     .saldo-box.saldo-actualizado {
       animation: resaltarSaldo 1.2s ease;
     }
@@ -481,12 +487,17 @@
 
     <div class="input-group">
       <label for="telefonoRetiro">Teléfono pago móvil</label>
-      <input type="text" id="telefonoRetiro" placeholder="Ej: 04141234567">
+      <input type="text" id="telefonoRetiro" inputmode="numeric" autocomplete="tel" maxlength="15" placeholder="Ej: 04141234567">
+    </div>
+
+    <div class="input-group">
+      <label for="whatsappRetiro">Número de WhatsApp</label>
+      <input type="text" id="whatsappRetiro" inputmode="numeric" autocomplete="tel" maxlength="15" placeholder="Ej: 04141234567">
     </div>
 
     <div class="input-group">
       <label for="cedulaRetiro">Cédula titular</label>
-      <input type="text" id="cedulaRetiro" placeholder="Ej: V-12345678">
+      <input type="text" id="cedulaRetiro" inputmode="numeric" maxlength="12" placeholder="Ej: 12345678">
     </div>
 
     <div class="input-group">
@@ -571,6 +582,7 @@
       const montoTexto = Number(monto || 0).toFixed(2);
       const saldoTexto = Number(saldoNuevo || 0).toFixed(2);
 
+      aviso.classList.remove('retiro');
       aviso.textContent = `✅ Recarga de ${montoTexto} Bs aprobada. Tu nuevo saldo es ${saldoTexto} Bs.`;
       aviso.classList.add('activa');
 
@@ -585,6 +597,109 @@
       temporizadorNotificacionRecarga = setTimeout(() => {
         aviso.classList.remove('activa');
       }, 12000);
+    }
+
+    function mostrarNotificacionRetiro(monto, saldoNuevo) {
+      const aviso = document.getElementById('notificacionRecarga');
+      const montoTexto = Number(monto || 0).toFixed(2);
+      const saldoTexto = Number(saldoNuevo || 0).toFixed(2);
+
+      aviso.classList.add('retiro');
+      aviso.textContent = `✅ Retiro de ${montoTexto} Bs aprobado. Tu nuevo saldo es ${saldoTexto} Bs.`;
+      aviso.classList.add('activa');
+
+      const saldoBox = document.querySelector('.saldo-box');
+      if (saldoBox) {
+        saldoBox.classList.remove('saldo-actualizado');
+        void saldoBox.offsetWidth;
+        saldoBox.classList.add('saldo-actualizado');
+      }
+
+      clearTimeout(temporizadorNotificacionRecarga);
+      temporizadorNotificacionRecarga = setTimeout(() => {
+        aviso.classList.remove('activa', 'retiro');
+      }, 12000);
+    }
+
+    function numeroNormal(valor, maximo = 15) {
+      return String(valor || '').replace(/\D/g, '').slice(0, maximo);
+    }
+
+    function codificarContactosRetiro(telefono, whatsapp) {
+      return `${numeroNormal(telefono)}|WA|${numeroNormal(whatsapp)}`;
+    }
+
+    function decodificarContactosRetiro(valor) {
+      const partes = String(valor || '').split('|WA|');
+      return {
+        telefono: numeroNormal(partes[0]),
+        whatsapp: numeroNormal(partes[1] || '')
+      };
+    }
+
+    function claveDatosRetiro(usuarioId) {
+      return `datos_retiro_bingo_${usuarioId}`;
+    }
+
+    function guardarDatosRetiro(usuario = obtenerUsuarioSesion()) {
+      if (!usuario?.id) return;
+
+      const datos = {
+        telefono: numeroNormal(document.getElementById('telefonoRetiro')?.value),
+        whatsapp: numeroNormal(document.getElementById('whatsappRetiro')?.value),
+        cedula: numeroNormal(document.getElementById('cedulaRetiro')?.value, 12),
+        banco: document.getElementById('bancoRetiro')?.value.trim() || ''
+      };
+
+      localStorage.setItem(claveDatosRetiro(usuario.id), JSON.stringify(datos));
+    }
+
+    async function restaurarDatosRetiro(usuario) {
+      let datos = null;
+
+      try {
+        datos = JSON.parse(localStorage.getItem(claveDatosRetiro(usuario.id)) || 'null');
+      } catch {
+        datos = null;
+      }
+
+      if (!datos) {
+        const { data: ultimoRetiro } = await supabaseClient
+          .from('retiros_bingo')
+          .select('telefono, cedula_titular, banco')
+          .eq('usuario_id', usuario.id)
+          .order('solicitado_en', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (ultimoRetiro) {
+          const contactos = decodificarContactosRetiro(ultimoRetiro.telefono);
+          datos = {
+            telefono: contactos.telefono,
+            whatsapp: contactos.whatsapp,
+            cedula: numeroNormal(ultimoRetiro.cedula_titular, 12),
+            banco: ultimoRetiro.banco || ''
+          };
+        }
+      }
+
+      const telefonoUsuario = numeroNormal(usuario.telefono);
+      const cedulaUsuario = numeroNormal(usuario.cedula, 12);
+      document.getElementById('telefonoRetiro').value = datos?.telefono || telefonoUsuario;
+      document.getElementById('whatsappRetiro').value = datos?.whatsapp || telefonoUsuario;
+      document.getElementById('cedulaRetiro').value = datos?.cedula || cedulaUsuario;
+      document.getElementById('bancoRetiro').value = datos?.banco || '';
+
+      ['telefonoRetiro', 'whatsappRetiro', 'cedulaRetiro'].forEach((id) => {
+        const input = document.getElementById(id);
+        input.addEventListener('input', () => {
+          input.value = numeroNormal(input.value, id === 'cedulaRetiro' ? 12 : 15);
+          guardarDatosRetiro(usuario);
+        });
+      });
+
+      document.getElementById('bancoRetiro').addEventListener('input', () => guardarDatosRetiro(usuario));
+      guardarDatosRetiro(usuario);
     }
 
     function iniciarTiempoRealRecargas(usuario) {
@@ -611,6 +726,32 @@
             const mensaje = document.getElementById('mensajeRecarga');
             mensaje.className = 'mensaje-recarga ok';
             mensaje.textContent = `✅ Recarga aprobada. Saldo actualizado: ${saldoNuevo.toFixed(2)} Bs.`;
+
+            const movimientos = document.getElementById('seccionMovimientos');
+            if (movimientos?.style.display !== 'none') {
+              await cargarMovimientos();
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'retiros_bingo',
+            filter: `usuario_id=eq.${usuario.id}`
+          },
+          async (payload) => {
+            if (payload.new?.estado !== 'aprobado' || payload.old?.estado === 'aprobado') return;
+
+            const saldoNuevo = await cargarCuenta();
+            if (saldoNuevo === null) return;
+
+            mostrarNotificacionRetiro(payload.new?.monto, saldoNuevo);
+
+            const mensaje = document.getElementById('mensajeRetiro');
+            mensaje.className = 'mensaje-recarga ok';
+            mensaje.textContent = `✅ Retiro aprobado. Saldo actualizado: ${saldoNuevo.toFixed(2)} Bs.`;
 
             const movimientos = document.getElementById('seccionMovimientos');
             if (movimientos?.style.display !== 'none') {
@@ -714,19 +855,28 @@ async function solicitarRecarga() {
   if (!usuario) return;
 
   const monto = parseFloat(document.getElementById('montoRetiro').value);
-  const telefono = document.getElementById('telefonoRetiro').value.trim();
-  const cedula = document.getElementById('cedulaRetiro').value.trim();
+  const telefono = numeroNormal(document.getElementById('telefonoRetiro').value);
+  const whatsapp = numeroNormal(document.getElementById('whatsappRetiro').value);
+  const cedula = numeroNormal(document.getElementById('cedulaRetiro').value, 12);
   const banco = document.getElementById('bancoRetiro').value.trim();
   const mensaje = document.getElementById('mensajeRetiro');
 
   mensaje.className = 'mensaje-recarga';
   mensaje.textContent = '';
 
-  if (!monto || monto <= 0 || !telefono || !cedula || !banco) {
+  if (!monto || monto <= 0 || !telefono || !whatsapp || !cedula || !banco) {
     mensaje.className = 'mensaje-recarga warn';
     mensaje.textContent = 'Completa todos los campos.';
     return;
   }
+
+  if (telefono.length < 10 || whatsapp.length < 10 || cedula.length < 6) {
+    mensaje.className = 'mensaje-recarga warn';
+    mensaje.textContent = 'Revisa el teléfono, WhatsApp y la cédula. Usa solamente números.';
+    return;
+  }
+
+  guardarDatosRetiro(usuario);
 
   try {
     const { data: billetera, error: billeteraError } = await supabaseClient
@@ -750,7 +900,7 @@ async function solicitarRecarga() {
       .insert([{
         usuario_id: usuario.id,
         monto,
-        telefono,
+        telefono: codificarContactosRetiro(telefono, whatsapp),
         cedula_titular: cedula,
         banco,
         estado: 'pendiente'
@@ -759,12 +909,9 @@ async function solicitarRecarga() {
     if (insertError) throw insertError;
 
     mensaje.className = 'mensaje-recarga ok';
-    mensaje.textContent = '✅ Solicitud de retiro enviada correctamente.';
+    mensaje.textContent = '✅ Solicitud de retiro enviada. Te avisaremos aquí cuando sea aprobada.';
 
     document.getElementById('montoRetiro').value = '';
-    document.getElementById('telefonoRetiro').value = '';
-    document.getElementById('cedulaRetiro').value = '';
-    document.getElementById('bancoRetiro').value = '';
   } catch (error) {
     console.error('Error solicitando retiro:', error);
     mensaje.className = 'mensaje-recarga error';
@@ -821,6 +968,7 @@ async function solicitarRecarga() {
       if (!usuario) return;
 
       await cargarCuenta();
+      await restaurarDatosRetiro(usuario);
       iniciarTiempoRealRecargas(usuario);
     }
 
