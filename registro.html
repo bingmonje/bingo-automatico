@@ -231,13 +231,12 @@ async function registrar() {
     return;
   }
 
-  const pinHash = await generarPinHash(pin);
   const { data, error } = await supabaseClient.rpc('bingo_registrar_usuario', {
     p_cedula: cedula,
     p_nombre: nombre,
     p_telefono: telefono,
     p_email: '',
-    p_pin_hash: pinHash
+    p_pin_hash: pin
   });
 
   if (error) {
