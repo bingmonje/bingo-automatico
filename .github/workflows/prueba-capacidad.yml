@@ -1,0 +1,72 @@
+name: Prueba progresiva de capacidad
+
+on:
+  workflow_dispatch:
+    inputs:
+      usuarios:
+        description: Usuarios simultaneos (plan Free: maximo seguro 180)
+        required: true
+        type: choice
+        default: '25'
+        options:
+          - '25'
+          - '50'
+          - '100'
+          - '150'
+          - '180'
+      duracion:
+        description: Duracion de la prueba
+        required: true
+        type: choice
+        default: '2m'
+        options:
+          - '2m'
+          - '5m'
+          - '10m'
+      confirmar:
+        description: Confirmo que no hay una partida real en curso
+        required: true
+        type: boolean
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prueba-capacidad-produccion
+  cancel-in-progress: false
+
+jobs:
+  prueba:
+    if: ${{ inputs.confirmar == true }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Descargar repositorio
+        uses: actions/checkout@v4
+
+      - name: Ejecutar k6 en contenedor oficial
+        shell: bash
+        run: |
+          set -o pipefail
+          docker run --rm \
+            -e VUS='${{ inputs.usuarios }}' \
+            -e DURATION='${{ inputs.duracion }}' \
+            -e HOLD_MS='115000' \
+            -v "$PWD:/src" \
+            -w /src \
+            grafana/k6:latest run \
+            --summary-export=load-tests/summary.json \
+            load-tests/realtime-room.js \
+            | tee load-tests/output.txt
+
+      - name: Guardar reporte
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capacidad-${{ inputs.usuarios }}-usuarios
+          path: |
+            load-tests/summary.json
+            load-tests/output.txt
+          if-no-files-found: warn
+          retention-days: 14
+
