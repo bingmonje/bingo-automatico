@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       usuarios:
-        description: Usuarios simultaneos (plan Free: maximo seguro 180)
+        description: 'Usuarios simultaneos (plan Free: maximo seguro 180)'
         required: true
         type: choice
         default: '25'
@@ -69,4 +69,3 @@ jobs:
             load-tests/output.txt
           if-no-files-found: warn
           retention-days: 14
-
