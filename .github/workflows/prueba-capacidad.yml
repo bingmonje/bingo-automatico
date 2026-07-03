@@ -55,7 +55,6 @@ jobs:
             -v "$PWD:/src" \
             -w /src \
             grafana/k6:latest run \
-            --summary-export=load-tests/summary.json \
             load-tests/realtime-room.js \
             | tee load-tests/output.txt
 
@@ -64,8 +63,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: capacidad-${{ inputs.usuarios }}-usuarios
-          path: |
-            load-tests/summary.json
-            load-tests/output.txt
+          path: load-tests/output.txt
           if-no-files-found: warn
           retention-days: 14
+
