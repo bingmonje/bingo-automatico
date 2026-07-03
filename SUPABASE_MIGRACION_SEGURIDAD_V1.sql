@@ -752,7 +752,7 @@ as $$
 begin
   perform public.bingo_admin_requerir_token(p_token);
   return query
-    select u.id, u.nombre::text, u.cedula::text, u.telefono::text, coalesce(b.saldo, 0)
+    select u.id::integer, u.nombre::text, u.cedula::text, u.telefono::text, coalesce(b.saldo, 0)
       from public.usuarios_bingo u
       left join public.billeteras_bingo b on b.usuario_id = u.id
      order by u.id;
@@ -819,7 +819,7 @@ as $$
 begin
   perform public.bingo_admin_requerir_token(p_token);
   return query
-    select r.id, u.id, u.nombre::text, u.cedula::text, u.telefono::text, r.solicitado_en
+    select r.id, u.id::integer, u.nombre::text, u.cedula::text, u.telefono::text, r.solicitado_en
       from public.recuperaciones_pin_bingo r join public.usuarios_bingo u on u.id = r.usuario_id
      where r.estado = 'pendiente' order by r.solicitado_en asc;
 end;
