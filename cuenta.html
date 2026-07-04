@@ -250,6 +250,12 @@
       color: #dff3ff;
     }
 
+    .notificacion-recarga.rechazada {
+      border-color: rgba(231,76,60,0.62);
+      background: rgba(231,76,60,0.18);
+      color: #ffd3cf;
+    }
+
     .saldo-box.saldo-actualizado {
       animation: resaltarSaldo 1.2s ease;
     }
@@ -409,7 +415,7 @@
 
         <div class="dato-box saldo-box">
           <span class="dato-label">Saldo disponible</span>
-          <span class="dato-value" id="saldoUsuario">0.00 Bs</span>
+          <span class="dato-value" id="saldoUsuario">0,00 Bs</span>
         </div>
       </div>
     </div>
@@ -437,6 +443,10 @@
       🎱 3. Sala de juego
     </button>
 
+    <button class="btn-secundario" onclick="abrirSoporteWhatsApp()">
+      💬 Soporte por WhatsApp
+    </button>
+
     <button class="btn-secundario" onclick="cerrarSesion()">
       Cerrar sesión
     </button>
@@ -451,7 +461,7 @@
   <div class="form-grid">
     <div class="input-group">
       <label for="montoRecarga">Monto en Bs</label>
-      <input type="number" id="montoRecarga" placeholder="Ej: 10.00" min="1" step="0.01">
+      <input type="text" id="montoRecarga" inputmode="decimal" placeholder="Ej: 1.000,00">
     </div>
 
     <div class="input-group">
@@ -482,7 +492,7 @@
   <div class="form-grid">
     <div class="input-group">
       <label for="montoRetiro">Monto en Bs</label>
-      <input type="number" id="montoRetiro" placeholder="Ej: 10.00" min="1" step="0.01">
+      <input type="text" id="montoRetiro" inputmode="decimal" placeholder="Ej: 1.000,00">
     </div>
 
     <div class="input-group">
@@ -520,6 +530,7 @@
   <div id="listaMovimientos">Cargando movimientos...</div>
 </div>
 
+  <script src="moneda.js?v=20260704"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
@@ -530,6 +541,64 @@
     let canalRecargasCuenta = null;
     let ultimoEstadoCuenta = null;
     let temporizadorNotificacionRecarga = null;
+    let audioContextCuenta = null;
+
+    function formatearMonto(valor) {
+      return window.BingoMoneda?.formatear(valor) || Number(valor || 0).toLocaleString('es-VE', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatearBs(valor) {
+      return `${formatearMonto(valor)} Bs`;
+    }
+
+    function leerMonto(id) {
+      const input = document.getElementById(id);
+      if (window.BingoMoneda) return window.BingoMoneda.parsear(input?.value);
+      const normalizado = String(input?.value || '').replace(/\./g, '').replace(',', '.');
+      const monto = Number(normalizado);
+      return Number.isFinite(monto) ? monto : 0;
+    }
+
+    async function prepararSonidoCuenta() {
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return false;
+      if (!audioContextCuenta) audioContextCuenta = new AudioContextClass();
+      if (audioContextCuenta.state === 'suspended') {
+        try { await audioContextCuenta.resume(); } catch (_) {}
+      }
+      return audioContextCuenta.state === 'running';
+    }
+
+    function reproducirSonidoCuenta(estado = 'aprobado') {
+      if (audioContextCuenta?.state !== 'running') return;
+      const inicio = audioContextCuenta.currentTime;
+      const frecuencias = estado === 'rechazado' ? [520, 390] : [740, 988];
+
+      frecuencias.forEach((frecuencia, indice) => {
+        const oscilador = audioContextCuenta.createOscillator();
+        const volumen = audioContextCuenta.createGain();
+        const empieza = inicio + (indice * 0.18);
+        const termina = empieza + 0.15;
+        oscilador.type = 'sine';
+        oscilador.frequency.setValueAtTime(frecuencia, empieza);
+        volumen.gain.setValueAtTime(0.0001, empieza);
+        volumen.gain.exponentialRampToValueAtTime(0.17, empieza + 0.02);
+        volumen.gain.exponentialRampToValueAtTime(0.0001, termina);
+        oscilador.connect(volumen);
+        volumen.connect(audioContextCuenta.destination);
+        oscilador.start(empieza);
+        oscilador.stop(termina + 0.02);
+      });
+    }
+
+    function abrirSoporteWhatsApp() {
+      const usuario = obtenerUsuarioSesion();
+      const mensaje = `Hola, necesito soporte con mi cuenta de Bingo Andino. Usuario: ${usuario?.nombre || 'cliente'}.`;
+      window.open(`https://wa.me/584123714136?text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener,noreferrer');
+    }
 
     function obtenerUsuarioSesion() {
       try {
@@ -579,18 +648,19 @@
       }
 
       const saldo = Number(data.saldo || 0);
-      document.getElementById('saldoUsuario').textContent = `${saldo.toFixed(2)} Bs`;
+      document.getElementById('saldoUsuario').textContent = formatearBs(saldo);
       return { saldo, estado: data };
     }
 
     function mostrarNotificacionRecarga(monto, saldoNuevo) {
       const aviso = document.getElementById('notificacionRecarga');
-      const montoTexto = Number(monto || 0).toFixed(2);
-      const saldoTexto = Number(saldoNuevo || 0).toFixed(2);
+      const montoTexto = formatearMonto(monto);
+      const saldoTexto = formatearMonto(saldoNuevo);
 
-      aviso.classList.remove('retiro');
+      aviso.classList.remove('retiro', 'rechazada');
       aviso.textContent = `✅ Recarga de ${montoTexto} Bs aprobada. Tu nuevo saldo es ${saldoTexto} Bs.`;
       aviso.classList.add('activa');
+      reproducirSonidoCuenta('aprobado');
 
       const saldoBox = document.querySelector('.saldo-box');
       if (saldoBox) {
@@ -607,12 +677,14 @@
 
     function mostrarNotificacionRetiro(monto, saldoNuevo) {
       const aviso = document.getElementById('notificacionRecarga');
-      const montoTexto = Number(monto || 0).toFixed(2);
-      const saldoTexto = Number(saldoNuevo || 0).toFixed(2);
+      const montoTexto = formatearMonto(monto);
+      const saldoTexto = formatearMonto(saldoNuevo);
 
+      aviso.classList.remove('rechazada');
       aviso.classList.add('retiro');
       aviso.textContent = `✅ Retiro de ${montoTexto} Bs aprobado. Tu nuevo saldo es ${saldoTexto} Bs.`;
       aviso.classList.add('activa');
+      reproducirSonidoCuenta('aprobado');
 
       const saldoBox = document.querySelector('.saldo-box');
       if (saldoBox) {
@@ -623,8 +695,29 @@
 
       clearTimeout(temporizadorNotificacionRecarga);
       temporizadorNotificacionRecarga = setTimeout(() => {
-        aviso.classList.remove('activa', 'retiro');
+        aviso.classList.remove('activa', 'retiro', 'rechazada');
       }, 12000);
+    }
+
+    function mostrarNotificacionRechazo(tipo, monto) {
+      const aviso = document.getElementById('notificacionRecarga');
+      const esRetiro = tipo === 'retiro';
+      aviso.classList.remove('retiro');
+      aviso.classList.add('rechazada');
+      aviso.textContent = `❌ Tu solicitud de ${esRetiro ? 'retiro' : 'recarga'} por ${formatearBs(monto)} fue rechazada. Comunícate con soporte si necesitas ayuda.`;
+      aviso.classList.add('activa');
+      reproducirSonidoCuenta('rechazado');
+
+      const mensaje = document.getElementById(esRetiro ? 'mensajeRetiro' : 'mensajeRecarga');
+      if (mensaje) {
+        mensaje.className = 'mensaje-recarga error';
+        mensaje.textContent = `Solicitud de ${esRetiro ? 'retiro' : 'recarga'} rechazada.`;
+      }
+
+      clearTimeout(temporizadorNotificacionRecarga);
+      temporizadorNotificacionRecarga = setTimeout(() => {
+        aviso.classList.remove('activa', 'retiro', 'rechazada');
+      }, 15000);
     }
 
     function numeroNormal(valor, maximo = 15) {
@@ -721,14 +814,15 @@
           async (payload) => {
             if (payload.new?.estado !== 'aprobado' || payload.old?.estado === 'aprobado') return;
 
-            const saldoNuevo = await cargarCuenta();
-            if (saldoNuevo === null) return;
+            const cuentaActualizada = await cargarCuenta();
+            if (!cuentaActualizada) return;
+            const saldoNuevo = cuentaActualizada.saldo;
 
             mostrarNotificacionRecarga(payload.new?.monto, saldoNuevo);
 
             const mensaje = document.getElementById('mensajeRecarga');
             mensaje.className = 'mensaje-recarga ok';
-            mensaje.textContent = `✅ Recarga aprobada. Saldo actualizado: ${saldoNuevo.toFixed(2)} Bs.`;
+            mensaje.textContent = `✅ Recarga aprobada. Saldo actualizado: ${formatearBs(saldoNuevo)}.`;
 
             const movimientos = document.getElementById('seccionMovimientos');
             if (movimientos?.style.display !== 'none') {
@@ -747,14 +841,15 @@
           async (payload) => {
             if (payload.new?.estado !== 'aprobado' || payload.old?.estado === 'aprobado') return;
 
-            const saldoNuevo = await cargarCuenta();
-            if (saldoNuevo === null) return;
+            const cuentaActualizada = await cargarCuenta();
+            if (!cuentaActualizada) return;
+            const saldoNuevo = cuentaActualizada.saldo;
 
             mostrarNotificacionRetiro(payload.new?.monto, saldoNuevo);
 
             const mensaje = document.getElementById('mensajeRetiro');
             mensaje.className = 'mensaje-recarga ok';
-            mensaje.textContent = `✅ Retiro aprobado. Saldo actualizado: ${saldoNuevo.toFixed(2)} Bs.`;
+            mensaje.textContent = `✅ Retiro aprobado. Saldo actualizado: ${formatearBs(saldoNuevo)}.`;
 
             const movimientos = document.getElementById('seccionMovimientos');
             if (movimientos?.style.display !== 'none') {
@@ -771,13 +866,28 @@
       const actual = resultado.estado;
       const anterior = ultimoEstadoCuenta;
 
-      if (anterior && actual.ultima_recarga?.estado === 'aprobado'
-          && anterior.ultima_recarga?.estado !== 'aprobado') {
-        mostrarNotificacionRecarga(actual.ultima_recarga.monto, resultado.saldo);
-      }
-      if (anterior && actual.ultimo_retiro?.estado === 'aprobado'
-          && anterior.ultimo_retiro?.estado !== 'aprobado') {
-        mostrarNotificacionRetiro(actual.ultimo_retiro.monto, resultado.saldo);
+      if (anterior) {
+        const recargaCambio = actual.ultima_recarga?.id !== anterior.ultima_recarga?.id
+          || actual.ultima_recarga?.estado !== anterior.ultima_recarga?.estado;
+        const retiroCambio = actual.ultimo_retiro?.id !== anterior.ultimo_retiro?.id
+          || actual.ultimo_retiro?.estado !== anterior.ultimo_retiro?.estado;
+
+        if (recargaCambio && actual.ultima_recarga?.estado === 'aprobado') {
+          mostrarNotificacionRecarga(actual.ultima_recarga.monto, resultado.saldo);
+        } else if (recargaCambio && actual.ultima_recarga?.estado === 'rechazado') {
+          mostrarNotificacionRechazo('recarga', actual.ultima_recarga.monto);
+        }
+
+        if (retiroCambio && actual.ultimo_retiro?.estado === 'aprobado') {
+          mostrarNotificacionRetiro(actual.ultimo_retiro.monto, resultado.saldo);
+        } else if (retiroCambio && actual.ultimo_retiro?.estado === 'rechazado') {
+          mostrarNotificacionRechazo('retiro', actual.ultimo_retiro.monto);
+        }
+
+        if ((recargaCambio || retiroCambio)
+            && document.getElementById('seccionMovimientos')?.style.display !== 'none') {
+          await cargarMovimientos();
+        }
       }
       ultimoEstadoCuenta = actual;
     }
@@ -844,7 +954,7 @@ async function solicitarRecarga() {
   const usuario = requerirSesion();
   if (!usuario) return;
 
-  const monto = parseFloat(document.getElementById('montoRecarga').value);
+  const monto = leerMonto('montoRecarga');
   const referencia = document.getElementById('referenciaRecarga').value.trim();
   const file = document.getElementById('comprobanteRecarga').files[0];
   const mensaje = document.getElementById('mensajeRecarga');
@@ -938,7 +1048,7 @@ async function solicitarRecarga() {
   const usuario = requerirSesion();
   if (!usuario) return;
 
-  const monto = parseFloat(document.getElementById('montoRetiro').value);
+  const monto = leerMonto('montoRetiro');
   const telefono = numeroNormal(document.getElementById('telefonoRetiro').value);
   const whatsapp = numeroNormal(document.getElementById('whatsappRetiro').value);
   const cedula = numeroNormal(document.getElementById('cedulaRetiro').value, 12);
@@ -976,7 +1086,7 @@ async function solicitarRecarga() {
     if (!solicitud?.ok) {
       if (solicitud?.codigo === 'saldo_insuficiente') {
         mensaje.className = 'mensaje-recarga warn';
-        mensaje.textContent = `Saldo insuficiente. Disponible: ${Number(solicitud.saldo || 0).toFixed(2)} Bs`;
+        mensaje.textContent = `Saldo insuficiente. Disponible: ${formatearBs(solicitud.saldo)}`;
         return;
       }
       if (solicitud?.codigo === 'retiro_pendiente') {
@@ -1018,7 +1128,8 @@ async function solicitarRecarga() {
   });
 
   if (error) {
-    contenedor.innerHTML = 'No se pudieron cargar los movimientos.';
+    console.error('Error cargando movimientos:', error);
+    contenedor.innerHTML = `No se pudieron cargar los movimientos. ${error.message || ''}`;
     return;
   }
 
@@ -1029,10 +1140,13 @@ async function solicitarRecarga() {
 
   contenedor.innerHTML = data.map(m => `
     <div style="padding: 14px; border-bottom: 1px solid rgba(255,255,255,0.08);">
-      <div style="font-weight: bold;">${m.tipo.toUpperCase()} - ${Number(m.monto).toFixed(2)} Bs</div>
+      <div style="font-weight: bold;">${String(m.tipo || 'movimiento').toUpperCase()} - ${formatearBs(m.monto)}</div>
       <div style="color: rgba(255,255,255,0.7); font-size: 0.95em;">${m.descripcion || ''}</div>
       <div style="color: rgba(255,255,255,0.5); font-size: 0.85em;">
-        Saldo: ${Number(m.saldo_anterior).toFixed(2)} → ${Number(m.saldo_nuevo).toFixed(2)} Bs
+        Saldo: ${formatearMonto(m.saldo_anterior)} → ${formatearBs(m.saldo_nuevo)}
+      </div>
+      <div style="color: rgba(255,255,255,0.42); font-size: 0.78em; margin-top: 4px;">
+        ${m.creado_en ? new Date(m.creado_en).toLocaleString('es-VE') : ''}
       </div>
     </div>
   `).join('');
@@ -1043,6 +1157,9 @@ async function solicitarRecarga() {
       const usuario = requerirSesion();
       if (!usuario) return;
 
+      window.BingoMoneda?.configurarInput(document.getElementById('montoRecarga'));
+      window.BingoMoneda?.configurarInput(document.getElementById('montoRetiro'));
+
       const inicial = await cargarCuenta();
       ultimoEstadoCuenta = inicial?.estado || null;
       await restaurarDatosRetiro(usuario);
@@ -1052,7 +1169,14 @@ async function solicitarRecarga() {
     window.addEventListener('beforeunload', () => {
       if (canalRecargasCuenta) clearInterval(canalRecargasCuenta);
       clearTimeout(temporizadorNotificacionRecarga);
+      if (audioContextCuenta) {
+        try { audioContextCuenta.close(); } catch (_) {}
+      }
     });
+
+    document.addEventListener('pointerdown', () => {
+      prepararSonidoCuenta();
+    }, { once: true });
 
     inicializarCuenta();
   </script>
