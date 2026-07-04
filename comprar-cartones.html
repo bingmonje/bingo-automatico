@@ -882,7 +882,7 @@
       <h2>🎯 Selecciona una Promoción</h2>
       <div id="saldoBox" style="background: rgba(39,174,96,0.12); border: 1px solid rgba(39,174,96,0.35); padding: 18px; border-radius: 14px; margin: 20px 0; text-align: center;">
   <strong>💰 Saldo disponible:</strong>
-  <span id="saldoDisponibleCompra">0.00 Bs</span>
+  <span id="saldoDisponibleCompra">0,00 Bs</span>
 </div>
       <div id="promosContainer" class="promos-container">
         <p style="text-align: center; color: rgba(255,255,255,0.6);">
@@ -898,7 +898,7 @@
           <button class="btn-cantidad" onclick="cambiarCantidad(1)">+</button>
         </div>
         <p class="precio-total">
-          Total: <strong id="precioTotal">0.00 Bs</strong>
+          Total: <strong id="precioTotal">0,00 Bs</strong>
         </p>
       </div>
       
@@ -962,11 +962,11 @@
         <div class="saldo-compra-resumen">
           <div class="saldo-compra-item">
             <strong>Saldo disponible</strong>
-            <span id="saldoDisponiblePaso4">0.00 Bs</span>
+            <span id="saldoDisponiblePaso4">0,00 Bs</span>
           </div>
           <div class="saldo-compra-item">
             <strong>Total de la compra</strong>
-            <span id="montoPagar">0.00 Bs</span>
+            <span id="montoPagar">0,00 Bs</span>
           </div>
         </div>
         <p id="avisoSaldoCompra" class="aviso-saldo-compra">Consultando tu saldo...</p>
@@ -1012,6 +1012,7 @@
     </div>
   </div>
 
+  <script src="moneda.js?v=20260704"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
@@ -1042,6 +1043,15 @@
 let cantidadCartonesDisponibles = 1000;
     let rotacionCartones = 0;
     let gridCartonesInicializado = false;
+
+    function formatearMonto(valor) {
+      return window.BingoMoneda?.formatear(valor) || Number(valor || 0).toFixed(2);
+    }
+
+    function formatearBs(valor) {
+      return `${formatearMonto(valor)} Bs`;
+    }
+
     const RANGOS_CARTON = {
       B: [1, 15],
       I: [16, 30],
@@ -1199,7 +1209,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       }
 
       if (data?.codigo === 'saldo_insuficiente') {
-        alert(`Saldo insuficiente. Tienes ${Number(data.saldo || 0).toFixed(2)} Bs y necesitas ${Number(data.monto || 0).toFixed(2)} Bs`);
+        alert(`Saldo insuficiente. Tienes ${formatearBs(data.saldo)} y necesitas ${formatearBs(data.monto)}`);
         await cargarSaldoUsuario();
         return;
       }
@@ -1253,7 +1263,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
           Pago procesado automáticamente desde tu billetera.
         </p>
         <p style="color: rgba(255,255,255,0.8);">
-          Saldo restante: <span style="color: var(--secondary); font-weight: bold;">${Number(saldoRestante).toFixed(2)} Bs</span>
+          Saldo restante: <span style="color: var(--secondary); font-weight: bold;">${formatearBs(saldoRestante)}</span>
         </p>
       </div>
 
@@ -1284,11 +1294,11 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
 
   if (!btn) return;
 
-  if (saldoPaso4) saldoPaso4.textContent = `${saldo.toFixed(2)} Bs`;
+  if (saldoPaso4) saldoPaso4.textContent = formatearBs(saldo);
 
   if (saldo >= monto && monto > 0) {
     btn.disabled = false;
-    btn.textContent = `💰 Confirmar compra por ${monto.toFixed(2)} Bs`;
+    btn.textContent = `💰 Confirmar compra por ${formatearBs(monto)}`;
     if (aviso) {
       aviso.textContent = '✅ Saldo suficiente. Tus cartones se aprobarán de inmediato.';
       aviso.style.color = 'var(--success)';
@@ -1299,7 +1309,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
     btn.textContent = '💰 Saldo insuficiente';
     if (aviso) {
       const faltante = Math.max(0, monto - saldo);
-      aviso.textContent = `Necesitas recargar ${faltante.toFixed(2)} Bs para completar esta compra.`;
+      aviso.textContent = `Necesitas recargar ${formatearBs(faltante)} para completar esta compra.`;
       aviso.style.color = 'var(--warning)';
     }
     if (linkRecarga) linkRecarga.style.display = 'inline-block';
@@ -1324,7 +1334,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
   }
 
   const saldo = Number(data.saldo || 0);
-  document.getElementById('saldoDisponibleCompra').textContent = `${saldo.toFixed(2)} Bs`;
+  document.getElementById('saldoDisponibleCompra').textContent = formatearBs(saldo);
   return saldo;
 }
     async function cargarRotacionCartones() {
@@ -1459,18 +1469,18 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       container.innerHTML = '';
 
       promociones.forEach(promo => {
-        const ahorro = Math.max(0, (promo.cantidad * precioUnitario) - promo.precio).toFixed(2);
+        const ahorro = Math.max(0, (promo.cantidad * precioUnitario) - promo.precio);
         const div = document.createElement('div');
         div.className = 'promo-card';
         div.onclick = () => seleccionarPromocion(promo, div);
         div.innerHTML = `
           <div class="promo-titulo">${promo.nombre}</div>
           <div class="promo-descripcion">${promo.descripcion || ''}</div>
-          <div class="promo-precio">${Number(promo.precio).toFixed(2)} Bs</div>
+          <div class="promo-precio">${formatearBs(promo.precio)}</div>
           <div style="color: rgba(255,255,255,0.7); font-size: 0.9em;">
             ${promo.cantidad} cartones
           </div>
-          ${Number(ahorro) > 0 ? `<span class="promo-ahorro">¡Ahorra ${ahorro} Bs!</span>` : ''}
+          ${ahorro > 0 ? `<span class="promo-ahorro">¡Ahorra ${formatearBs(ahorro)}!</span>` : ''}
         `;
         container.appendChild(div);
       });
@@ -1482,7 +1492,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       personalizado.innerHTML = `
         <div class="promo-titulo" style="color: #aaa;">Personalizado</div>
         <div class="promo-descripcion">Elige la cantidad que desees</div>
-        <div class="promo-precio" style="font-size: 1.5em; color: #aaa;">${precioUnitario.toFixed(2)} Bs/cartón</div>
+        <div class="promo-precio" style="font-size: 1.5em; color: #aaa;">${formatearBs(precioUnitario)}/cartón</div>
       `;
       container.appendChild(personalizado);
     }
@@ -1496,7 +1506,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       document.getElementById('cantidadInput').value = promo.cantidad;
       document.getElementById('selectorManual').style.display = 'none';
       document.getElementById('btnContinuarPaso2').disabled = false;
-      document.getElementById('precioTotal').textContent = Number(promo.precio).toFixed(2) + ' Bs';
+      document.getElementById('precioTotal').textContent = formatearBs(promo.precio);
     }
 
     function mostrarSelectorManual() {
@@ -1519,7 +1529,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       const cantidad = parseInt(document.getElementById('cantidadInput').value || '1', 10) || 1;
       cantidadRequerida = cantidad;
       const total = cantidad * precioUnitario;
-      document.getElementById('precioTotal').textContent = total.toFixed(2) + ' Bs';
+      document.getElementById('precioTotal').textContent = formatearBs(total);
     }
 
     function irPaso2() {
@@ -1555,8 +1565,8 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       }
 
       document.getElementById('statRequeridos').textContent = datosComprador.cantidad;
-      document.getElementById('statTotal').textContent = datosComprador.precio_total.toFixed(2) + ' Bs';
-      document.getElementById('montoPagar').textContent = datosComprador.precio_total.toFixed(2) + ' Bs';
+      document.getElementById('statTotal').textContent = formatearBs(datosComprador.precio_total);
+      document.getElementById('montoPagar').textContent = formatearBs(datosComprador.precio_total);
 
       await cargarEstadoCartones();
       actualizarStats();
@@ -1861,7 +1871,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
     function actualizarStats() {
       document.getElementById('statSeleccionados').textContent = cartonesSeleccionados.size;
       document.getElementById('statRequeridos').textContent = datosComprador.cantidad || 0;
-      document.getElementById('statTotal').textContent = (datosComprador.precio_total || 0).toFixed(2) + ' Bs';
+      document.getElementById('statTotal').textContent = formatearBs(datosComprador.precio_total);
       document.getElementById('btnConfirmarCartones').disabled =
         cartonesSeleccionados.size !== (datosComprador.cantidad || 0);
 
