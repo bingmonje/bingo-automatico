@@ -323,6 +323,7 @@
 
   </div>
 
+  <script src="moneda.js?v=20260704"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
@@ -442,7 +443,7 @@ async function actualizarPanelUsuario() {
         estado.style.color = 'var(--warning)';
       } else {
         const saldo = Number(data.saldo || 0);
-        estado.textContent = `Saldo disponible: ${saldo.toFixed(2)} Bs`;
+        estado.textContent = `Saldo disponible: ${window.BingoMoneda?.conBs(saldo) || `${saldo.toFixed(2)} Bs`}`;
         estado.style.color = 'var(--success)';
       }
     }
