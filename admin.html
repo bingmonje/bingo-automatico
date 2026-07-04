@@ -774,7 +774,1708 @@
 
           <div class="schedule-panel">
             <div>
-              <label for="minutosEn…15156 tokens truncated…rt('Promoción eliminada');
+              <label for="minutosEntreJuegosInput">Próximo juego dentro de (minutos)</label>
+              <input id="minutosEntreJuegosInput" type="number" min="1" max="1440" step="1" value="60">
+            </div>
+            <div>
+              <label for="segundosEntreBolasInput">Tiempo entre bolas (segundos)</label>
+              <input id="segundosEntreBolasInput" type="number" min="5" max="60" step="1" value="5">
+            </div>
+            <button class="btn-control btn-start" onclick="guardarProgramacionAutomatica()">
+              ♾️ Guardar y activar ciclo
+            </button>
+            <button class="btn-control btn-stop" onclick="detenerProgramacionAutomatica()">
+              ⏸️ Detener ciclo
+            </button>
+            <div id="programacionEstadoAdmin" class="schedule-status">
+              Cargando programación del servidor...
+            </div>
+          </div>
+
+          <div class="ball-display">
+            <div id="currentBallDisplay" class="main-ball" style="display: none;">
+              <span class="ball-letter" id="dispLetter">B</span>
+              <span id="dispNumber">--</span>
+            </div>
+            <div id="waitingMsg" style="padding: 60px; color: rgba(255,255,255,0.5);">
+              El juego no ha iniciado
+            </div>
+          </div>
+<div id="winnerFila" class="winner-display">
+  <h2>🟡 ¡GANADOR POR FILA! 🟡</h2>
+  <p id="winnerFilaInfo" style="font-size: 1.3em; margin-top: 10px;"></p>
+</div>
+
+<div id="winnerColumna" class="winner-display">
+  <h2>🔵 ¡GANADOR POR COLUMNA! 🔵</h2>
+  <p id="winnerColumnaInfo" style="font-size: 1.3em; margin-top: 10px;"></p>
+</div>
+          <div id="winnerDisplay" class="winner-display">
+            <h2>🏆 ¡GANADOR! 🏆</h2>
+            <p id="winnerInfo" style="font-size: 1.3em; margin-top: 10px;"></p>
+          </div>
+        </div>
+      </div>
+<!-- SECCIÓN: historial de ganadores -->
+      <div id="sec-historial" class="section">
+  <h2 class="section-title">🏆 Historial de Ganadores del Día</h2>
+  <div class="data-table">
+    <table style="width: 100%;">
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Premio</th>
+          <th>Ganador</th>
+          <th>Cédula</th>
+          <th>Teléfono</th>
+          <th>Cartón</th>
+          <th>Porcentaje</th>
+          <th>Ganó</th>
+        </tr>
+      </thead>
+      <tbody id="tablaHistorialGanadores">
+        <tr>
+          <td colspan="8" style="text-align:center; padding:40px;">Cargando...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+      <!-- SECCIÓN: recargas PENDIENTES -->
+      
+      <div id="sec-recargas" class="section">
+  <h2>💳 Recargas pendientes</h2>
+  <div id="listaRecargas"></div>
+</div>
+      <!-- SECCIÓN: retiros PENDIENTES -->
+<div id="sec-retiros" class="section">
+  <h2>🏧 Retiros pendientes</h2>
+  <div id="listaRetiros"></div>
+</div>
+      <!-- SECCIÓN: RECUPERACIÓN DE PIN -->
+      <div id="sec-recuperaciones" class="section">
+        <h2 class="section-title">🔑 Solicitudes para recuperar PIN</h2>
+        <p style="color:rgba(255,255,255,.7); line-height:1.5; margin-bottom:18px;">
+          Verifica la identidad por WhatsApp antes de aprobar. Al aprobar, el PIN nuevo reemplaza inmediatamente al anterior.
+        </p>
+        <div id="listaRecuperacionesPin">Abre esta sección para cargar las solicitudes.</div>
+      </div>
+      <!-- SECCIÓN: CLIENTES Y SALDOS -->
+      <div id="sec-clientes" class="section">
+        <h2 class="section-title">👥 Clientes y saldos actuales</h2>
+        <div class="clientes-toolbar">
+          <input
+            id="buscarClienteAdmin"
+            type="search"
+            placeholder="Buscar por nombre, cédula o teléfono"
+            oninput="filtrarClientesAdmin()"
+          >
+          <button class="btn-control btn-auto" onclick="cargarClientesSaldos()">↻ Actualizar</button>
+        </div>
+        <div class="clientes-resumen">
+          <span id="totalClientesAdmin">0 clientes</span>
+          <span id="saldoClientesAdmin">Saldo total: 0.00 Bs</span>
+        </div>
+        <div class="data-table">
+          <table style="width:100%; min-width:760px;">
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Cédula</th>
+                <th>Teléfono</th>
+                <th>Saldo actual</th>
+              </tr>
+            </thead>
+            <tbody id="tablaClientesAdmin">
+              <tr><td colspan="4" style="text-align:center; padding:40px;">Abre esta sección para cargar los clientes.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <!-- SECCIÓN: COMPRAS PENDIENTES -->
+      <div id="sec-ventas" class="section">
+        <h2 class="section-title">🛒 Compras</h2>
+        <div class="data-table">
+          <table style="width: 100%;">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Cliente</th>
+                <th>Cartones</th>
+                <th>Monto</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tablaVentas">
+              <tr><td colspan="6" style="text-align: center; padding: 40px;">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- SECCIÓN: PROMOCIONES -->
+      <div id="sec-promos" class="section">
+        <h2 class="section-title">🏷️ Gestión de Promociones</h2>
+        
+        <div class="form-card">
+          <h3>Crear Nueva Promoción</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre</label>
+              <input type="text" id="promoNombre" placeholder="Ej: Pack Familiar">
+            </div>
+            <div class="form-group">
+              <label>Cantidad de cartones</label>
+              <input type="number" id="promoCantidad" min="2" max="100" value="5">
+            </div>
+            <div class="form-group">
+              <label>Precio especial (Bs)</label>
+              <input type="number" id="promoPrecio" step="0.01" placeholder="0.00">
+            </div>
+            <div class="form-group">
+              <label>Descripción</label>
+              <input type="text" id="promoDesc" placeholder="Ej: 5 cartones por el precio de 4">
+            </div>
+          </div>
+          <button class="btn-save" onclick="crearPromocion()">💾 Crear Promoción</button>
+        </div>
+
+        <div class="form-card">
+          <h3>Promociones Activas</h3>
+          <div id="listaPromociones" class="promo-list">
+            Cargando...
+          </div>
+        </div>
+      </div>
+
+      <!-- SECCIÓN: CONFIGURACIÓN -->
+      <div id="sec-config" class="section">
+        <h2 class="section-title">⚙️ Ajustes</h2>
+
+        <div class="form-card">
+  <h3>🔄 Rotación de cartones</h3>
+  <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+    Cambia este valor para regenerar la distribución interna de todos los cartones.
+    El número del cartón se mantiene, pero su contenido cambia.
+  </p>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>Rotación actual</label>
+      <input type="number" id="rotacionCartonesInput" min="0" max="999999" step="1" placeholder="Ej: 0">
+    </div>
+  </div>
+
+  <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+    <button class="btn-save" onclick="guardarRotacionCartones()">💾 Guardar rotación</button>
+    <button class="btn-save" onclick="generarNuevaRotacion()" style="background: var(--info);">🎲 Generar nueva</button>
+    <span id="rotacionCartonesInfo" style="color: rgba(255,255,255,0.7);">
+      Cargando rotación actual...
+    </span>
+  </div>
+</div>
+        
+        
+        <div class="form-card">
+          <h3>💵 Precio del cartón</h3>
+          <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">Este valor se usa en <strong>comprar-cartones.html</strong> para calcular el precio unitario.</p>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label>Precio unitario actual (Bs)</label>
+              <input type="number" id="precioCartonInput" min="0.01" step="0.01" placeholder="Ej: 5.00">
+            </div>
+          </div>
+
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+            <button class="btn-save" onclick="guardarPrecioCarton()">💾 Guardar precio</button>
+            <span id="precioActualInfo" style="color: rgba(255,255,255,0.7);">Cargando precio actual...</span>
+          </div>
+        </div>
+        
+        <div class="form-card">
+  <h3>🎫 Cantidad de cartones disponibles</h3>
+  <p style="color: rgba(255,255,255,0.7); margin-bottom: 20px;">
+    Define cuántos cartones estarán visibles para la venta en <strong>comprar-cartones.html</strong>.
+  </p>
+
+  <div class="form-row">
+    <div class="form-group">
+      <label>Cantidad actual</label>
+      <input
+        type="number"
+        id="cantidadCartonesInput"
+        min="1"
+        max="5000"
+        step="1"
+        placeholder="Ej: 1000"
+      >
+    </div>
+  </div>
+
+  <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:center;">
+    <button class="btn-save" onclick="guardarCantidadCartones()">💾 Guardar cantidad</button>
+    <span id="cantidadCartonesInfo" style="color: rgba(255,255,255,0.7);">
+      Cargando cantidad actual...
+    </span>
+  </div>
+</div>
+
+        <div class="form-card" style="border: 2px solid rgba(231,76,60,0.35);">
+          <h3 style="color: var(--danger);">🚨 Reinicio general de cartones</h3>
+          <p style="color: rgba(255,255,255,0.75); line-height: 1.6; margin-bottom: 20px;">
+            Este botón libera <strong>todos</strong> los cartones del sistema.
+            Elimina los cartones apartados y vendidos, marca las compras activas como <strong>rechazadas</strong>
+            y borra del almacenamiento los comprobantes de esas compras pendientes.
+          </p>
+          <button onclick="reiniciarSistemaCartones()" style="background: var(--danger); color: white; border: none; padding: 14px 28px; border-radius: 10px; cursor: pointer; font-weight: bold;">♻️ Reiniciar y liberar todos los cartones</button>
+          <p style="color: rgba(255,255,255,0.5); margin-top: 12px; font-size: 0.92em;">
+            Usa esta opción solo cuando quieras arrancar una nueva jornada y dejar todos los cartones disponibles otra vez.
+          </p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ';
+
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let currentGame = null;
+    let availableBalls = [];
+    let gameTimerInterval = null;
+    let programacionTimer = null;
+    let cicloAutomaticoActivo = false;
+    let minimoCartonesInicio = 15;
+    let cartonesVendidosProgramacion = 0;
+    let isProcessingBall = false;
+    let adminLiveSubscription = null;
+    let adminVentasTimer = null;
+    let adminRevenueTimer = null;
+    let adminPlayersTimer = null;
+    let adminPendientesTimer = null;
+    let recuperacionPinDisponible = true;
+    let clientesSaldoAdmin = [];
+    let adminSessionToken = sessionStorage.getItem('bingo_admin_token') || '';
+    let sonidoNotificacionesActivo = localStorage.getItem('bingo_admin_sonido') !== 'off';
+    let adminAudioContext = null;
+    let adminConteosPendientes = null;
+    let adminContadoresEnCurso = false;
+
+    function actualizarBotonSonido() {
+      const boton = document.getElementById('btnSonidoAdmin');
+      if (!boton) return;
+
+      const audioListo = sonidoNotificacionesActivo && adminAudioContext?.state === 'running';
+      boton.textContent = sonidoNotificacionesActivo
+        ? (audioListo ? '🔔 Sonido activo' : '🔔 Activar sonido')
+        : '🔕 Sonido apagado';
+      boton.classList.toggle('is-muted', !sonidoNotificacionesActivo);
+      boton.setAttribute('aria-pressed', String(audioListo));
+    }
+
+    async function prepararSonidoNotificaciones() {
+      if (!sonidoNotificacionesActivo) {
+        actualizarBotonSonido();
+        return false;
+      }
+
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) return false;
+
+      if (!adminAudioContext) adminAudioContext = new AudioContextClass();
+      if (adminAudioContext.state === 'suspended') {
+        try { await adminAudioContext.resume(); } catch (_) {}
+      }
+
+      actualizarBotonSonido();
+      return adminAudioContext.state === 'running';
+    }
+
+    function reproducirSonidoNotificacion() {
+      if (!sonidoNotificacionesActivo || adminAudioContext?.state !== 'running') {
+        actualizarBotonSonido();
+        return;
+      }
+
+      const inicio = adminAudioContext.currentTime;
+      [
+        { frecuencia: 880, demora: 0, duracion: 0.13 },
+        { frecuencia: 1174.66, demora: 0.18, duracion: 0.18 }
+      ].forEach(nota => {
+        const oscilador = adminAudioContext.createOscillator();
+        const volumen = adminAudioContext.createGain();
+        const empieza = inicio + nota.demora;
+        const termina = empieza + nota.duracion;
+
+        oscilador.type = 'sine';
+        oscilador.frequency.setValueAtTime(nota.frecuencia, empieza);
+        volumen.gain.setValueAtTime(0.0001, empieza);
+        volumen.gain.exponentialRampToValueAtTime(0.18, empieza + 0.02);
+        volumen.gain.exponentialRampToValueAtTime(0.0001, termina);
+        oscilador.connect(volumen);
+        volumen.connect(adminAudioContext.destination);
+        oscilador.start(empieza);
+        oscilador.stop(termina + 0.02);
+      });
+    }
+
+    async function alternarSonidoNotificaciones() {
+      if (sonidoNotificacionesActivo && adminAudioContext?.state === 'running') {
+        sonidoNotificacionesActivo = false;
+        localStorage.setItem('bingo_admin_sonido', 'off');
+        actualizarBotonSonido();
+        return;
+      }
+
+      sonidoNotificacionesActivo = true;
+      localStorage.setItem('bingo_admin_sonido', 'on');
+      if (await prepararSonidoNotificaciones()) reproducirSonidoNotificacion();
+      actualizarBotonSonido();
+    }
+
+    function tokenAdmin() {
+      if (!adminSessionToken) throw new Error('Sesión administrativa vencida');
+      return adminSessionToken;
+    }
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function pintarContadorPendiente(id, cantidad) {
+      const badge = document.getElementById(id);
+      if (!badge) return;
+      badge.textContent = String(Number(cantidad || 0));
+      badge.style.background = Number(cantidad || 0) > 0 ? 'var(--danger)' : 'rgba(255,255,255,0.18)';
+    }
+
+    async function actualizarContadoresPendientes() {
+      if (adminContadoresEnCurso || !adminSessionToken) return;
+      adminContadoresEnCurso = true;
+
+      try {
+        const consultaRecuperaciones = recuperacionPinDisponible
+          ? supabaseClient.rpc('bingo_admin_listar_recuperaciones_seguro', { p_token: tokenAdmin() })
+          : Promise.resolve({ data: [], error: null });
+
+        const consultas = await Promise.all([
+          supabaseClient.rpc('bingo_admin_listar_compras_seguro', { p_token: tokenAdmin() }),
+          supabaseClient.rpc('bingo_admin_listar_recargas_seguro', { p_token: tokenAdmin() }),
+          supabaseClient.rpc('bingo_admin_listar_retiros_seguro', { p_token: tokenAdmin() }),
+          consultaRecuperaciones
+        ]);
+
+        const [compras, recargas, retiros, recuperaciones] = consultas;
+        const anteriores = adminConteosPendientes;
+        const actuales = anteriores
+          ? { ...anteriores }
+          : { compras: 0, recargas: 0, retiros: 0, recuperaciones: 0 };
+        const actualizados = [];
+
+        if (!compras.error) {
+          actuales.compras = (compras.data || []).filter(c => c.estado === 'pendiente').length;
+          pintarContadorPendiente('badgeCompras', actuales.compras);
+          actualizados.push('compras');
+        }
+        if (!recargas.error) {
+          actuales.recargas = recargas.data?.length || 0;
+          pintarContadorPendiente('badgeRecargas', actuales.recargas);
+          actualizados.push('recargas');
+        }
+        if (!retiros.error) {
+          actuales.retiros = retiros.data?.length || 0;
+          pintarContadorPendiente('badgeRetiros', actuales.retiros);
+          actualizados.push('retiros');
+        }
+        if (!recuperaciones.error) {
+          actuales.recuperaciones = recuperaciones.data?.length || 0;
+          pintarContadorPendiente('badgeRecuperaciones', actuales.recuperaciones);
+          actualizados.push('recuperaciones');
+        } else if (recuperaciones.error.code === 'PGRST202') {
+          recuperacionPinDisponible = false;
+        }
+
+        const hayNotificacionNueva = anteriores && actualizados.some(
+          tipo => actuales[tipo] > anteriores[tipo]
+        );
+        adminConteosPendientes = actuales;
+        if (hayNotificacionNueva) reproducirSonidoNotificacion();
+      } finally {
+        adminContadoresEnCurso = false;
+      }
+    }
+    async function cargarRecargasPendientes() {
+  const contenedor = document.getElementById('listaRecargas');
+  contenedor.innerHTML = 'Cargando...';
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_listar_recargas_seguro', {
+    p_token: tokenAdmin()
+  });
+
+  if (error) {
+    console.error(error);
+    contenedor.innerHTML = 'Error cargando recargas';
+    return;
+  }
+
+  if (!data.length) {
+    contenedor.innerHTML = 'No hay recargas pendientes';
+    pintarContadorPendiente('badgeRecargas', 0);
+    return;
+  }
+
+  pintarContadorPendiente('badgeRecargas', data.length);
+
+  contenedor.innerHTML = data.map(r => `
+    <div class="card-recarga" id="recarga-${r.id}">
+      <p><strong>${escaparHtmlAdmin(r.nombre || 'Jugador')}</strong></p>
+      <p>Cédula: ${numeroNormalAdmin(r.cedula, 12) || '-'}</p>
+      <p>Monto: ${Number(r.monto).toFixed(2)} Bs</p>
+      <p>Ref: ${r.referencia_pago}</p>
+
+      <a href="${r.comprobante_url}" target="_blank">Ver comprobante</a>
+
+      <div class="acciones">
+        <button onclick="aprobarRecarga(${r.id})">✅ Aprobar</button>
+        <button onclick="rechazarRecarga(${r.id})">❌ Rechazar</button>
+      </div>
+    </div>
+  `).join('');
+}
+    
+    function numeroNormalAdmin(valor, maximo = 15) {
+  return String(valor || '').replace(/\D/g, '').slice(0, maximo);
+}
+
+function decodificarContactosRetiroAdmin(valor) {
+  const partes = String(valor || '').split('|WA|');
+  return {
+    telefono: numeroNormalAdmin(partes[0]),
+    whatsapp: numeroNormalAdmin(partes[1] || '')
+  };
+}
+
+function escaparHtmlAdmin(valor) {
+  return String(valor ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function numeroWhatsAppInternacional(valor) {
+  let numero = numeroNormalAdmin(valor);
+  if (!numero) return '';
+  if (numero.startsWith('00')) numero = numero.slice(2);
+  if (numero.startsWith('58')) return numero;
+  if (numero.startsWith('0')) return `58${numero.slice(1)}`;
+  return `58${numero}`;
+}
+
+function abrirWhatsAppRetiro(numero, nombre, monto) {
+  const destino = numeroWhatsAppInternacional(numero);
+  if (!destino) {
+    alert('Esta solicitud no tiene un número de WhatsApp válido.');
+    return;
+  }
+
+  const mensaje = `Hola ${nombre || 'jugador'}, tu retiro de ${Number(monto || 0).toFixed(2)} Bs fue aprobado. Te envío el comprobante de pago.`;
+  window.open(`https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener,noreferrer');
+}
+
+function abrirWhatsAppRecuperacion(numero, nombre) {
+  const destino = numeroWhatsAppInternacional(numero);
+  if (!destino) {
+    alert('Esta solicitud no tiene un número de WhatsApp válido.');
+    return;
+  }
+
+  const mensaje = `Hola ${nombre || 'jugador'}, recibimos una solicitud para cambiar el PIN de tu cuenta de Bingo Andino 75. Necesitamos confirmar que fuiste tú antes de aprobarla.`;
+  window.open(`https://wa.me/${destino}?text=${encodeURIComponent(mensaje)}`, '_blank', 'noopener,noreferrer');
+}
+
+async function cargarRecuperacionesPin() {
+  const contenedor = document.getElementById('listaRecuperacionesPin');
+  if (!contenedor) return;
+  contenedor.innerHTML = 'Cargando solicitudes...';
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_listar_recuperaciones_seguro', {
+    p_token: tokenAdmin()
+  });
+
+  if (error) {
+    console.error('Error cargando recuperaciones de PIN:', error);
+    if (error.code === 'PGRST202') recuperacionPinDisponible = false;
+    contenedor.innerHTML = 'No se pudieron cargar las solicitudes. Verifica que la migración de recuperación de PIN esté aplicada en Supabase.';
+    return;
+  }
+
+  recuperacionPinDisponible = true;
+  const solicitudes = data || [];
+  pintarContadorPendiente('badgeRecuperaciones', solicitudes.length);
+
+  if (!solicitudes.length) {
+    contenedor.innerHTML = 'No hay solicitudes de recuperación pendientes.';
+    return;
+  }
+
+  contenedor.innerHTML = solicitudes.map(solicitud => {
+    const nombre = escaparHtmlAdmin(solicitud.nombre || 'Jugador');
+    const cedula = numeroNormalAdmin(solicitud.cedula, 12) || '-';
+    const telefono = numeroNormalAdmin(solicitud.telefono) || '-';
+    const fecha = solicitud.solicitado_en
+      ? new Date(solicitud.solicitado_en).toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+      : '-';
+
+    return `
+      <div class="card-recarga" id="recuperacion-pin-${solicitud.id}">
+        <p><strong>${nombre}</strong></p>
+        <p>Cédula: ${cedula}</p>
+        <p>Teléfono registrado: ${telefono}</p>
+        <p>Solicitada: ${fecha}</p>
+
+        <button
+          type="button"
+          class="btn-whatsapp-retiro"
+          data-whatsapp="${telefono}"
+          data-nombre="${nombre}"
+          onclick="abrirWhatsAppRecuperacion(this.dataset.whatsapp, this.dataset.nombre)"
+        >💬 Verificar identidad por WhatsApp</button>
+
+        <div class="acciones">
+          <button onclick="aprobarRecuperacionPin(${solicitud.id})">✅ Aprobar PIN</button>
+          <button onclick="rechazarRecuperacionPin(${solicitud.id})">❌ Rechazar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+async function aprobarRecuperacionPin(id) {
+  if (!confirm('¿Confirmaste por WhatsApp la identidad de este cliente? Al aprobar, su PIN anterior dejará de funcionar.')) return;
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_recuperacion_seguro', {
+    p_token: tokenAdmin(),
+    p_solicitud_id: id
+  });
+
+  if (error || !data?.ok) {
+    alert('No se pudo aprobar el PIN: ' + (error?.message || data?.codigo || 'error desconocido'));
+    return;
+  }
+
+  document.getElementById(`recuperacion-pin-${id}`)?.remove();
+  await Promise.all([cargarRecuperacionesPin(), actualizarContadoresPendientes()]);
+  alert('PIN actualizado. Avísale al cliente que ya puede iniciar sesión con su PIN nuevo.');
+}
+
+async function rechazarRecuperacionPin(id) {
+  if (!confirm('¿Rechazar esta solicitud de recuperación?')) return;
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_rechazar_recuperacion_seguro', {
+    p_token: tokenAdmin(),
+    p_solicitud_id: id
+  });
+
+  if (error || !data?.ok) {
+    alert('No se pudo rechazar la solicitud: ' + (error?.message || data?.codigo || 'error desconocido'));
+    return;
+  }
+
+  document.getElementById(`recuperacion-pin-${id}`)?.remove();
+  await Promise.all([cargarRecuperacionesPin(), actualizarContadoresPendientes()]);
+}
+
+    async function cargarRetirosPendientes() {
+  const contenedor = document.getElementById('listaRetiros');
+  contenedor.innerHTML = 'Cargando...';
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_listar_retiros_seguro', {
+    p_token: tokenAdmin()
+  });
+
+  if (error) {
+    contenedor.innerHTML = 'Error cargando retiros';
+    return;
+  }
+
+  if (!data.length) {
+    contenedor.innerHTML = 'No hay retiros pendientes';
+    pintarContadorPendiente('badgeRetiros', 0);
+    return;
+  }
+
+  pintarContadorPendiente('badgeRetiros', data.length);
+
+  contenedor.innerHTML = data.map(r => {
+    const contactos = decodificarContactosRetiroAdmin(r.telefono);
+    const nombre = escaparHtmlAdmin(r.nombre || 'Jugador');
+    const cedulaUsuario = numeroNormalAdmin(r.cedula, 12) || '-';
+    const cedulaTitular = numeroNormalAdmin(r.cedula_titular, 12) || '-';
+    const banco = escaparHtmlAdmin(r.banco || '-');
+    const monto = Number(r.monto || 0).toFixed(2);
+    const botonWhatsApp = contactos.whatsapp
+      ? `<button type="button" class="btn-whatsapp-retiro" data-whatsapp="${contactos.whatsapp}" data-nombre="${nombre}" data-monto="${monto}" onclick="abrirWhatsAppRetiro(this.dataset.whatsapp, this.dataset.nombre, this.dataset.monto)">💬 WhatsApp ${contactos.whatsapp} · Enviar comprobante</button>`
+      : '<p style="color:var(--warning);">Sin número de WhatsApp registrado</p>';
+
+    return `
+      <div class="card-recarga" id="retiro-${r.id}">
+        <p><strong>${nombre}</strong></p>
+        <p>Cédula del usuario: ${cedulaUsuario}</p>
+        <p>Cédula del titular: ${cedulaTitular}</p>
+        <p>Monto: ${monto} Bs</p>
+        <p>Teléfono pago móvil: ${contactos.telefono || '-'}</p>
+        <p>Banco: ${banco}</p>
+
+        ${botonWhatsApp}
+        <p style="font-size:.85em; color:rgba(255,255,255,.6);">Después de hacer el pago, abre WhatsApp, adjunta el comprobante y luego aprueba la solicitud.</p>
+
+        <div class="acciones">
+          <button onclick="aprobarRetiro(${r.id})">✅ Aprobar</button>
+          <button onclick="rechazarRetiro(${r.id})">❌ Rechazar</button>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+    
+    async function aprobarRetiro(id) {
+  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_retiro_seguro', {
+    p_token: tokenAdmin(),
+    p_retiro_id: id
+  });
+
+  if (error || !data?.ok) {
+    if (data?.codigo === 'saldo_insuficiente') {
+      alert('Saldo insuficiente en usuario');
+    } else {
+      alert('No se pudo aprobar el retiro: ' + (error?.message || data?.codigo || 'error desconocido'));
+    }
+    return;
+  }
+
+  document.getElementById(`retiro-${id}`)?.remove();
+  await Promise.all([cargarRetirosPendientes(), actualizarContadoresPendientes()]);
+  alert('Retiro aprobado');
+}
+    
+    async function rechazarRetiro(id) {
+  const { error } = await supabaseClient.rpc('bingo_admin_rechazar_retiro_seguro', {
+    p_token: tokenAdmin(),
+    p_retiro_id: id
+  });
+
+  if (error) {
+    alert('No se pudo rechazar el retiro: ' + error.message);
+    return;
+  }
+
+  document.getElementById(`retiro-${id}`)?.remove();
+  await Promise.all([cargarRetirosPendientes(), actualizarContadoresPendientes()]);
+  alert('Retiro rechazado');
+}
+    
+    async function aprobarRecarga(recargaId) {
+  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_recarga_seguro', {
+    p_token: tokenAdmin(),
+    p_recarga_id: recargaId
+  });
+
+  if (error || !data?.ok) {
+    alert('No se pudo aprobar la recarga: ' + (error?.message || data?.codigo || 'error desconocido'));
+    return;
+  }
+
+  document.getElementById(`recarga-${recargaId}`)?.remove();
+  await Promise.all([cargarRecargasPendientes(), actualizarContadoresPendientes()]);
+  alert('Recarga aprobada correctamente');
+}
+    async function rechazarRecarga(recargaId) {
+  const { error } = await supabaseClient.rpc('bingo_admin_rechazar_recarga_seguro', {
+    p_token: tokenAdmin(),
+    p_recarga_id: recargaId
+  });
+
+  if (error) {
+    alert('No se pudo rechazar la recarga: ' + error.message);
+    return;
+  }
+
+  document.getElementById(`recarga-${recargaId}`)?.remove();
+  await Promise.all([cargarRecargasPendientes(), actualizarContadoresPendientes()]);
+  alert('Recarga rechazada');
+}
+
+    async function login() {
+      prepararSonidoNotificaciones();
+      const usuario = document.getElementById('adminUsuario').value.trim();
+      const pass = document.getElementById('adminPass').value;
+      const boton = document.querySelector('#loginScreen .btn-login');
+
+      if (!usuario || !pass) {
+        alert('Credenciales incorrectas');
+        return;
+      }
+
+      boton.disabled = true;
+      boton.textContent = 'VALIDANDO...';
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_login_seguro', {
+        p_usuario: usuario,
+        p_clave: pass
+      });
+
+      boton.disabled = false;
+      boton.textContent = 'ACCEDER';
+      document.getElementById('adminPass').value = '';
+
+      if (error || !data?.ok) {
+        const detalle = data?.codigo === 'rate_limit'
+          ? 'Demasiados intentos. Intenta más tarde.'
+          : 'Credenciales incorrectas';
+        alert(detalle);
+        return;
+      }
+
+      adminSessionToken = data.token;
+      sessionStorage.setItem('bingo_admin_token', adminSessionToken);
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      await initAdmin();
+    }
+
+    async function logout() {
+      if (gameTimerInterval) clearInterval(gameTimerInterval);
+      if (programacionTimer) clearInterval(programacionTimer);
+      if (adminPendientesTimer) clearInterval(adminPendientesTimer);
+      if (adminSessionToken) {
+        try {
+          await supabaseClient.rpc('bingo_admin_logout_seguro', { p_token: adminSessionToken });
+        } catch (_) {}
+      }
+      adminSessionToken = '';
+      sessionStorage.removeItem('bingo_admin_token');
+      location.reload();
+    }
+
+    async function restaurarSesionAdmin() {
+      if (!adminSessionToken) return;
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_validar_sesion_seguro', {
+        p_token: adminSessionToken
+      });
+
+      if (error || !data?.ok) {
+        adminSessionToken = '';
+        sessionStorage.removeItem('bingo_admin_token');
+        return;
+      }
+
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      await initAdmin();
+    }
+
+    function showSection(section, el) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+      const target = document.getElementById(`sec-${section}`);
+      if (!target) return;
+
+      target.classList.add('active');
+      if (el) el.classList.add('active');
+
+      const titulos = {
+        auto: 'Control del Bingo Automático',
+        ventas: 'Compras',
+        historial: 'Historial de Ganadores',
+        promos: 'Gestión de Promociones',
+        config: 'Ajustes',
+        recargas: 'Recargas de usuarios',
+        retiros: 'Retiros de usuarios',
+        recuperaciones: 'Recuperación de PIN',
+        clientes: 'Clientes y saldos'
+      };
+      document.getElementById('pageTitle').textContent = titulos[section] || 'Panel Admin';
+
+      if (section === 'ventas') cargarVentas();
+      if (section === 'historial') cargarHistorialGanadores();
+      if (section === 'promos') cargarPromociones();
+      if (section === 'config') cargarAjustes();
+      if (section === 'recargas') cargarRecargasPendientes();
+      if (section === 'retiros') cargarRetirosPendientes();
+      if (section === 'recuperaciones') cargarRecuperacionesPin();
+      if (section === 'clientes') cargarClientesSaldos();
+    }
+
+    async function initAdmin() {
+      actualizarBotonSonido();
+      await Promise.all([
+        checkCurrentGame(),
+        updateApprovedPlayersCount(),
+        updateApprovedRevenueStats(),
+        cargarAjustes(),
+        cargarProgramacionAutomatica(),
+        actualizarContadoresPendientes()
+      ]);
+      setupSubscriptions();
+      if (adminPendientesTimer) clearInterval(adminPendientesTimer);
+      adminPendientesTimer = setInterval(actualizarContadoresPendientes, 5000);
+    }
+async function cargarHistorialGanadores() {
+  const tbody = document.getElementById('tablaHistorialGanadores');
+  if (!tbody) return;
+
+  const hoy = new Date();
+  const yyyy = hoy.getFullYear();
+  const mm = String(hoy.getMonth() + 1).padStart(2, '0');
+  const dd = String(hoy.getDate()).padStart(2, '0');
+  const fechaHoy = `${yyyy}-${mm}-${dd}`;
+
+  const { data, error } = await supabaseClient
+    .from('historial_ganadores')
+    .select('*')
+    .eq('fecha', fechaHoy)
+    .order('creado_en', { ascending: false });
+
+  if (error) {
+    console.error('Error cargando historial de ganadores:', error);
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align:center; padding:40px;">
+          Error cargando historial
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" style="text-align:center; padding:40px;">
+          No hay ganadores registrados hoy
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  const juegos = [...new Set(data.map(item => Number(item.juego_id)).filter(Number.isFinite))];
+  let pagos = [];
+
+  if (juegos.length > 0) {
+    const { data: pagosData, error: pagosError } = await supabaseClient
+      .from('bingo_premios_ganadores')
+      .select('juego_id,tipo_premio,numero_carton,monto_premio')
+      .in('juego_id', juegos);
+
+    if (pagosError) {
+      console.error('Error cargando montos pagados a ganadores:', pagosError);
+    } else {
+      pagos = pagosData || [];
+    }
+  }
+
+  const clavePremio = item =>
+    `${Number(item.juego_id)}|${String(item.tipo_premio || '').toLowerCase()}|${Number(item.numero_carton)}`;
+
+  const pagosPorGanador = new Map(
+    pagos.map(item => [clavePremio(item), Number(item.monto_premio || 0)])
+  );
+
+  const ganadoresPorPremio = new Map();
+  data.forEach(item => {
+    const clave = `${Number(item.juego_id)}|${String(item.tipo_premio || '').toLowerCase()}`;
+    ganadoresPorPremio.set(clave, (ganadoresPorPremio.get(clave) || 0) + 1);
+  });
+
+  tbody.innerHTML = data.map(item => {
+    const hora = item.creado_en
+      ? new Date(item.creado_en).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      : '--:--';
+
+    const premio = item.tipo_premio === 'fila'
+      ? '🟡 Fila'
+      : item.tipo_premio === 'columna'
+      ? '🔵 Columna'
+      : '🏆 Cartón lleno';
+
+    const tipo = String(item.tipo_premio || '').toLowerCase();
+    const porcentajePremio = tipo === 'final' || tipo === 'lleno' ? 60 : 20;
+    const claveGrupo = `${Number(item.juego_id)}|${tipo}`;
+    const cantidadGanadores = Math.max(1, ganadoresPorPremio.get(claveGrupo) || 1);
+    const porcentajeIndividual = porcentajePremio / cantidadGanadores;
+    const textoPorcentaje = cantidadGanadores > 1
+      ? `${porcentajeIndividual.toFixed(2)}% (${porcentajePremio}% ÷ ${cantidadGanadores})`
+      : `${porcentajePremio}%`;
+    const monto = pagosPorGanador.get(clavePremio(item));
+    const textoMonto = Number.isFinite(monto) ? `${monto.toFixed(2)} Bs` : 'Sin registro';
+
+    return `
+      <tr>
+        <td>${hora}</td>
+        <td>${premio}</td>
+        <td>${escaparHtmlAdmin(item.nombre || '-')}</td>
+        <td>${escaparHtmlAdmin(numeroNormalAdmin(item.cedula, 12) || '-')}</td>
+        <td>${escaparHtmlAdmin(numeroNormalAdmin(item.telefono) || '-')}</td>
+        <td>#${String(item.numero_carton || 0).padStart(4, '0')}</td>
+        <td>${textoPorcentaje}</td>
+        <td><strong>${textoMonto}</strong></td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function cargarFilasPaginadasAdmin(tabla, columnas, columnaOrden) {
+  const filas = [];
+  const tamanoPagina = 1000;
+  let desde = 0;
+
+  while (true) {
+    const { data, error } = await supabaseClient
+      .from(tabla)
+      .select(columnas)
+      .order(columnaOrden, { ascending: true })
+      .range(desde, desde + tamanoPagina - 1);
+
+    if (error) throw error;
+    filas.push(...(data || []));
+
+    if (!data || data.length < tamanoPagina) break;
+    desde += tamanoPagina;
+  }
+
+  return filas;
+}
+
+function textoBusquedaAdmin(valor) {
+  return String(valor || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+function renderizarClientesAdmin(clientes) {
+  const tbody = document.getElementById('tablaClientesAdmin');
+  if (!tbody) return;
+
+  if (!clientes.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">No se encontraron clientes.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = clientes.map(cliente => `
+    <tr>
+      <td><strong>${escaparHtmlAdmin(cliente.nombre || 'Sin nombre')}</strong></td>
+      <td>${escaparHtmlAdmin(numeroNormalAdmin(cliente.cedula, 12) || '-')}</td>
+      <td>${escaparHtmlAdmin(numeroNormalAdmin(cliente.telefono) || '-')}</td>
+      <td><strong>${Number(cliente.saldo || 0).toFixed(2)} Bs</strong></td>
+    </tr>
+  `).join('');
+}
+
+function filtrarClientesAdmin() {
+  const termino = textoBusquedaAdmin(document.getElementById('buscarClienteAdmin')?.value);
+  if (!termino) {
+    renderizarClientesAdmin(clientesSaldoAdmin);
+    return;
+  }
+
+  const filtrados = clientesSaldoAdmin.filter(cliente =>
+    textoBusquedaAdmin(`${cliente.nombre} ${cliente.cedula} ${cliente.telefono}`).includes(termino)
+  );
+  renderizarClientesAdmin(filtrados);
+}
+
+async function cargarClientesSaldos() {
+  const tbody = document.getElementById('tablaClientesAdmin');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:40px;">Cargando clientes y saldos...</td></tr>';
+
+  try {
+    const { data, error } = await supabaseClient.rpc('bingo_admin_listar_clientes_seguro', {
+      p_token: tokenAdmin()
+    });
+    if (error) throw error;
+    clientesSaldoAdmin = data || [];
+
+    const saldoTotal = clientesSaldoAdmin.reduce((total, cliente) => total + Number(cliente.saldo || 0), 0);
+    document.getElementById('totalClientesAdmin').textContent = `${clientesSaldoAdmin.length} cliente(s)`;
+    document.getElementById('saldoClientesAdmin').textContent = `Saldo total: ${saldoTotal.toFixed(2)} Bs`;
+    filtrarClientesAdmin();
+  } catch (error) {
+    console.error('Error cargando clientes y saldos:', error);
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:40px;">No se pudieron cargar los clientes: ${escaparHtmlAdmin(error.message || 'error desconocido')}</td></tr>`;
+  }
+}
+
+  async function checkCurrentGame() {
+  const { data, error } = await supabaseClient
+    .from('bingo_automatico')
+    .select('*')
+    .order('id', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error('Error verificando juego actual:', error);
+    return;
+  }
+
+  currentGame = data || null;
+  updateAutoUI(currentGame);
+  actualizarCuentaProgramacionAdmin(currentGame);
+
+  if (currentGame?.estado === 'jugando') {
+    await loadAvailableBalls(currentGame.id);
+    startGameTimer(new Date(currentGame.iniciado_en));
+    await updateBallCount();
+  } else {
+    detenerRelojJuego(currentGame);
+    document.getElementById('autoBalls').textContent = '0';
+  }
+
+  // Recuperar premios ya existentes
+  if (currentGame?.premio_fila_ganador_nombre) {
+    showWinnerFila(currentGame.premio_fila_ganador_nombre);
+  }
+
+  if (currentGame?.premio_columna_ganador_nombre) {
+    setTimeout(() => {
+      showWinnerColumna(currentGame.premio_columna_ganador_nombre);
+    }, currentGame?.premio_fila_ganador_nombre ? 5200 : 0);
+  }
+
+  if (currentGame?.ganador_id) {
+    setTimeout(() => {
+      showWinner(currentGame.ganador_nombre || `Cartón #${currentGame.ganador_id}`);
+    }, currentGame?.premio_fila_ganador_nombre || currentGame?.premio_columna_ganador_nombre ? 10400 : 0);
+  }
+}
+    async function loadAvailableBalls(gameId) {
+      const { data: bolas, error } = await supabaseClient
+        .from('bolas_auto')
+        .select('numero')
+        .eq('juego_id', gameId);
+
+      if (error) {
+        console.error('Error cargando bolas:', error);
+        return;
+      }
+
+      const sorteadas = new Set((bolas || []).map(b => b.numero));
+      availableBalls = shuffle(
+        Array.from({ length: 75 }, (_, i) => i + 1).filter(n => !sorteadas.has(n))
+      );
+    }
+    let colaGanadores = [];
+let mostrando = false;
+
+function mostrarSecuencial(func, nombre) {
+  colaGanadores.push({ func, nombre });
+  procesarCola();
+}
+
+function procesarCola() {
+  if (mostrando || colaGanadores.length === 0) return;
+
+  mostrando = true;
+  const { func, nombre } = colaGanadores.shift();
+
+  func(nombre);
+
+  setTimeout(() => {
+    mostrando = false;
+    procesarCola();
+  }, 5000);
+}
+ function showWinnerFila(info) {
+  const div = document.getElementById('winnerFila');
+  document.getElementById('winnerFilaInfo').textContent = info;
+
+  div.classList.add('active');
+
+  setTimeout(() => {
+    div.classList.remove('active');
+  }, 5000);
+}
+
+function showWinnerColumna(info) {
+  const div = document.getElementById('winnerColumna');
+  document.getElementById('winnerColumnaInfo').textContent = info;
+
+  div.classList.add('active');
+
+  setTimeout(() => {
+    div.classList.remove('active');
+  }, 5000);
+}
+
+    function programarCargaVentasAdmin() {
+      clearTimeout(adminVentasTimer);
+      adminVentasTimer = setTimeout(async () => {
+        adminVentasTimer = null;
+        if (document.getElementById('sec-ventas').classList.contains('active')) {
+          await cargarVentas();
+        }
+      }, 350);
+    }
+
+    function programarRevenueAdmin() {
+      clearTimeout(adminRevenueTimer);
+      adminRevenueTimer = setTimeout(async () => {
+        adminRevenueTimer = null;
+        await updateApprovedRevenueStats();
+      }, 350);
+    }
+
+    function programarPlayersAdmin() {
+      clearTimeout(adminPlayersTimer);
+      adminPlayersTimer = setTimeout(async () => {
+        adminPlayersTimer = null;
+        await updateApprovedPlayersCount();
+      }, 350);
+    }
+
+    function setupSubscriptions() {
+      if (adminLiveSubscription) {
+        try { adminLiveSubscription.unsubscribe(); } catch (_) {}
+      }
+
+      adminLiveSubscription = supabaseClient
+        .channel('admin-live-' + Date.now())
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'bingo_automatico' },
+          async (payload) => {
+            currentGame = payload.new || null;
+            updateAutoUI(currentGame);
+            actualizarCuentaProgramacionAdmin(currentGame);
+
+            if (currentGame?.estado === 'jugando') {
+              await loadAvailableBalls(currentGame.id);
+              startGameTimer(new Date(currentGame.iniciado_en));
+              await updateBallCount();
+            } else {
+              detenerRelojJuego(currentGame);
+            }
+
+// 🟡 FILA
+if (payload.new?.premio_fila_ganador_nombre && !payload.old?.premio_fila_ganador_nombre) {
+  mostrarSecuencial(showWinnerFila, payload.new.premio_fila_ganador_nombre);
+}
+
+// 🔵 COLUMNA
+if (payload.new?.premio_columna_ganador_nombre && !payload.old?.premio_columna_ganador_nombre) {
+  mostrarSecuencial(showWinnerColumna, payload.new.premio_columna_ganador_nombre);
+}
+
+// 🏆 CARTÓN LLENO
+if (payload.new?.ganador_id && !payload.old?.ganador_id) {
+  mostrarSecuencial(showWinner, payload.new.ganador_nombre || `Cartón #${payload.new.ganador_id}`);
+}
+          }
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'historial_ganadores' },
+          async () => {
+            if (document.getElementById('sec-historial').classList.contains('active')) {
+              await cargarHistorialGanadores();
+            }
+          }
+        )
+        .on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'bolas_auto' },
+          async (payload) => {
+            showBall(payload.new.numero, payload.new.letra);
+            await updateBallCount();
+          }
+        )
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'apartados_temp' },
+          () => {
+            programarCargaVentasAdmin();
+            programarRevenueAdmin();
+            actualizarContadoresPendientes();
+          }
+        )
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'cartones_vendidos' },
+          () => {
+            programarPlayersAdmin();
+            programarRevenueAdmin();
+          }
+        )
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'recargas_bingo' },
+          async () => {
+            await actualizarContadoresPendientes();
+            if (document.getElementById('sec-recargas').classList.contains('active')) {
+              await cargarRecargasPendientes();
+            }
+          }
+        )
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'retiros_bingo' },
+          async () => {
+            await actualizarContadoresPendientes();
+            if (document.getElementById('sec-retiros').classList.contains('active')) {
+              await cargarRetirosPendientes();
+            }
+          }
+        )
+        .subscribe();
+    }
+   
+    async function startAutoGame() {
+      if (!confirm('¿Iniciar nuevo juego automático?')) return;
+document.getElementById('winnerDisplay').classList.remove('active');
+      document.getElementById('winnerFila').classList.remove('active');
+document.getElementById('winnerColumna').classList.remove('active');
+colaGanadores = [];
+mostrando = false;
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_iniciar_juego_seguro', {
+        p_token: tokenAdmin()
+      });
+
+      if (error) {
+        alert('Error: ' + error.message);
+        return;
+      }
+
+      if (!data?.ok) {
+        if (data?.codigo === 'juego_ya_activo') {
+          alert('Ya existe un juego activo.');
+        } else if (data?.codigo === 'cartones_insuficientes') {
+          alert(`Faltan ${Number(data.faltantes || 0)} cartón(es). El juego requiere mínimo ${Number(data.minimo_cartones || 15)} cartones aprobados.`);
+        } else {
+          alert('No se pudo iniciar el juego.');
+        }
+        return;
+      }
+
+      currentGame = data.juego;
+      document.getElementById('autoBalls').textContent = '0';
+
+      updateAutoUI(currentGame);
+      actualizarCuentaProgramacionAdmin(currentGame);
+      startGameTimer(new Date());
+      await updateApprovedPlayersCount();
+    }
+
+    async function validarCartonesDuplicados(cartones) {
+      const { data, error } = await supabaseClient
+        .from('cartones_vendidos')
+        .select('numero_carton')
+        .in('numero_carton', cartones);
+
+      if (error) throw error;
+      return (data || []).map(item => item.numero_carton);
+    }
+
+    function construirFilasVenta(compra) {
+      return compra.cartones.map(num => ({
+        numero_carton: num,
+        cedula: compra.cedula,
+        nombre: compra.nombre,
+        telefono: compra.telefono
+      }));
+    }
+
+    async function aprobarCompraDesdeRegistro(compra) {
+      try {
+        if (!compra || !Array.isArray(compra.cartones) || compra.cartones.length === 0) {
+          return false;
+        }
+
+        const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_compra', {
+          p_apartado_id: compra.id
+        });
+
+        if (error) {
+          console.error('Error aprobando compra:', error);
+          return false;
+        }
+
+        if (!data?.ok) {
+          console.warn('Compra no aprobada:', data);
+          return data?.codigo === 'cartones_ocupados' ? 'duplicado' : false;
+        }
+
+        return true;
+      } catch (error) {
+        console.error('Error aprobando compra:', error);
+        return false;
+      }
+    }
+
+    async function aprobarComprasPendientes() {
+      const { count: pendientes, error } = await supabaseClient
+        .from('apartados_temp')
+        .select('id', { count: 'exact', head: true })
+        .eq('estado', 'pendiente');
+
+      if (error) {
+        alert('Error consultando compras pendientes: ' + error.message);
+        return false;
+      }
+
+      if (!pendientes) return 0;
+
+      const confirmar = confirm(
+        `Hay ${pendientes} compra(s) pendiente(s).\n¿Aprobar automáticamente antes de iniciar?`
+      );
+
+      if (!confirmar) return false;
+
+      const { data: resultado, error: aprobarError } = await supabaseClient
+        .rpc('bingo_admin_aprobar_compras_pendientes');
+
+      if (aprobarError) {
+        alert('Error aprobando compras pendientes: ' + aprobarError.message);
+        return false;
+      }
+
+      const aprobadas = Number(resultado?.aprobadas || 0);
+      const duplicadas = Number(resultado?.duplicadas || 0);
+      const fallidas = Number(resultado?.fallidas || 0);
+
+      await Promise.all([
+        cargarVentas(),
+        updateApprovedPlayersCount(),
+        updateApprovedRevenueStats(),
+        actualizarContadoresPendientes()
+      ]);
+
+      let mensaje = `${aprobadas} compra(s) aprobada(s).`;
+      if (duplicadas) mensaje += ` ${duplicadas} compra(s) omitida(s) por cartones ya vendidos.`;
+      if (fallidas) mensaje += ` ${fallidas} compra(s) fallaron.`;
+      alert(mensaje);
+
+      return aprobadas;
+    }
+
+    async function drawBall() {
+      if (isProcessingBall) return;
+      if (!currentGame || currentGame.estado !== 'jugando') return;
+      isProcessingBall = true;
+      document.getElementById('btnDrawBall').disabled = true;
+
+      try {
+        const { data, error } = await supabaseClient.rpc('bingo_admin_sortear_bola_aleatoria_seguro', {
+          p_token: tokenAdmin(),
+          p_juego_id: currentGame.id
+        });
+
+        if (error) throw error;
+        if (!data?.ok) {
+          if (data?.codigo === 'sin_bolas') throw new Error('No quedan bolas');
+          throw new Error(data?.codigo || 'No se pudo registrar la bola');
+        }
+      } catch (error) {
+        alert('Error al sacar bola: ' + error.message);
+      } finally {
+        isProcessingBall = false;
+        if (currentGame?.estado === 'jugando') {
+          document.getElementById('btnDrawBall').disabled = false;
+        }
+      }
+    }
+
+    async function toggleAuto() {
+      if (!currentGame || currentGame.estado !== 'jugando') return;
+
+      const btn = document.getElementById('btnAutoMode');
+      btn.disabled = true;
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_configurar_auto_juego_seguro', {
+        p_token: tokenAdmin(),
+        p_juego_id: currentGame.id,
+        p_activo: !currentGame.auto_bolas
+      });
+
+      if (error || !data?.ok) {
+        alert('No se pudo cambiar el automático: ' + (error?.message || data?.codigo || 'error desconocido'));
+        updateAutoUI(currentGame);
+        return;
+      }
+
+      currentGame = data.juego;
+      updateAutoUI(currentGame);
+      actualizarCuentaProgramacionAdmin(currentGame);
+    }
+
+    async function stopAutoGame() {
+      if (!confirm('¿Finalizar juego?')) return;
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_finalizar_juego_seguro', {
+        p_token: tokenAdmin(),
+        p_juego_id: currentGame.id
+      });
+
+      if (error || !data?.ok) {
+        alert('No se pudo finalizar: ' + (error?.message || data?.codigo || 'error desconocido'));
+        return;
+      }
+
+      currentGame = data.juego || currentGame;
+      updateAutoUI(currentGame);
+      actualizarCuentaProgramacionAdmin(currentGame);
+
+      detenerRelojJuego(currentGame);
+    }
+
+    function showBall(num, letra) {
+      const display = document.getElementById('currentBallDisplay');
+      const waiting = document.getElementById('waitingMsg');
+
+      waiting.style.display = 'none';
+      display.style.display = 'inline-flex';
+
+      document.getElementById('dispLetter').textContent = letra;
+      document.getElementById('dispNumber').textContent = num;
+
+      display.style.animation = 'none';
+      setTimeout(() => display.style.animation = 'pulse 0.5s ease', 10);
+    }
+
+    function showWinner(info) {
+      const winnerDiv = document.getElementById('winnerDisplay');
+      document.getElementById('winnerInfo').textContent = info;
+      winnerDiv.classList.add('active');
+    }
+
+    function updateAutoUI(game) {
+      const statusText = document.getElementById('autoStatus');
+      const dot = document.getElementById('statusDot');
+      const desc = document.getElementById('statusDesc');
+
+      document.getElementById('btnStartAuto').disabled = game?.estado === 'jugando';
+      document.getElementById('btnDrawBall').disabled = game?.estado !== 'jugando' || isProcessingBall;
+      document.getElementById('btnAutoMode').disabled = game?.estado !== 'jugando';
+      document.getElementById('btnStopAuto').disabled = game?.estado !== 'jugando';
+
+      if (!game || game.estado === 'esperando') {
+        statusText.textContent = 'ESPERANDO';
+        dot.className = 'status-dot waiting';
+        desc.textContent = 'Listo para iniciar';
+      } else if (game.estado === 'jugando') {
+        statusText.textContent = 'JUGANDO';
+        dot.className = 'status-dot playing';
+        desc.textContent = 'Juego en curso';
+      } else {
+        statusText.textContent = 'FINALIZADO';
+        dot.className = 'status-dot ended';
+        desc.textContent = 'Juego terminado';
+      }
+
+      const autoBtn = document.getElementById('btnAutoMode');
+      const autoActivo = game?.estado === 'jugando' && Boolean(game.auto_bolas);
+      autoBtn.textContent = autoActivo ? '🤖 Servidor: ON' : '🤖 Servidor: OFF';
+      autoBtn.style.background = autoActivo ? 'var(--success)' : 'var(--info)';
+    }
+
+    function startGameTimer(startTime) {
+      if (gameTimerInterval) clearInterval(gameTimerInterval);
+
+      const start = startTime instanceof Date ? startTime : new Date(startTime);
+
+      const pintarTiempo = () => {
+        if (currentGame?.estado !== 'jugando') {
+          detenerRelojJuego(currentGame);
+          return;
+        }
+
+        const diff = Math.max(0, Math.floor((Date.now() - start) / 1000));
+        const mins = Math.floor(diff / 60).toString().padStart(2, '0');
+        const secs = (diff % 60).toString().padStart(2, '0');
+        document.getElementById('autoTime').textContent = `${mins}:${secs}`;
+      };
+
+      pintarTiempo();
+      gameTimerInterval = setInterval(pintarTiempo, 1000);
+    }
+
+    function detenerRelojJuego(game = currentGame) {
+      if (gameTimerInterval) {
+        clearInterval(gameTimerInterval);
+        gameTimerInterval = null;
+      }
+
+      if (game?.estado === 'finalizado' && game.iniciado_en && game.finalizado_en) {
+        const inicio = new Date(game.iniciado_en).getTime();
+        const fin = new Date(game.finalizado_en).getTime();
+        const diff = Math.max(0, Math.floor((fin - inicio) / 1000));
+        const mins = Math.floor(diff / 60).toString().padStart(2, '0');
+        const secs = (diff % 60).toString().padStart(2, '0');
+        document.getElementById('autoTime').textContent = `${mins}:${secs}`;
+      } else if (!game || game?.estado === 'esperando') {
+        document.getElementById('autoTime').textContent = '00:00';
+      }
+    }
+
+    async function updateBallCount() {
+      if (!currentGame) {
+        document.getElementById('autoBalls').textContent = '0';
+        return;
+      }
+
+      const { count } = await supabaseClient
+        .from('bolas_auto')
+        .select('*', { count: 'exact', head: true })
+        .eq('juego_id', currentGame.id);
+
+      document.getElementById('autoBalls').textContent = count || 0;
+    }
+
+    async function updateApprovedPlayersCount() {
+      const { data, error } = await supabaseClient.rpc('bingo_resumen_sala');
+
+      if (error) {
+        console.error('Error contando jugadores:', error);
+        return;
+      }
+
+      document.getElementById('autoPlayers').textContent = Number(data?.jugadores || 0);
+      cartonesVendidosProgramacion = Number(data?.cartones || 0);
+    }
+
+    function formatearBs(valor) {
+      return `${Number(valor || 0).toFixed(2)} Bs`;
+    }
+
+    async function updateApprovedRevenueStats() {
+      const { data, error } = await supabaseClient.rpc('bingo_resumen_sala');
+
+      if (error) {
+        console.error('Error calculando recaudación aprobada:', error);
+        return;
+      }
+
+      const total = Number(data?.recaudado || 0);
+      const promos = Number(data?.recaudado_promos || 0);
+      const individuales = Number(data?.recaudado_individual || 0);
+      const gananciaAdmin = total * 0.30;
+
+      document.getElementById('montoTotalAprobado').textContent = formatearBs(total);
+      document.getElementById('montoPromosAprobado').textContent = formatearBs(promos);
+      document.getElementById('montoIndividualAprobado').textContent = formatearBs(individuales);
+       document.getElementById('gananciaAdmin').textContent = formatearBs(gananciaAdmin);
+    }
+
+    function getLetter(num) {
+      if (num <= 15) return 'B';
+      if (num <= 30) return 'I';
+      if (num <= 45) return 'N';
+      if (num <= 60) return 'G';
+      return 'O';
+    }
+
+    async function crearPromocion() {
+      const nombre = document.getElementById('promoNombre').value.trim();
+      const cantidad = parseInt(document.getElementById('promoCantidad').value, 10);
+      const precio = parseFloat(document.getElementById('promoPrecio').value);
+      const desc = document.getElementById('promoDesc').value.trim();
+
+      if (!nombre || !cantidad || !precio) {
+        alert('Completa todos los campos obligatorios');
+        return;
+      }
+
+      if (cantidad < 2) {
+        alert('La cantidad mínima es 2 cartones');
+        return;
+      }
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_promocion_seguro', {
+        p_token: tokenAdmin(),
+        p_accion: 'crear',
+        p_nombre: nombre,
+        p_cantidad: cantidad,
+        p_precio: precio,
+        p_descripcion: desc,
+        p_activa: true
+      });
+
+      if (error || !data?.ok) {
+        alert('Error: ' + (error?.message || data?.codigo || 'error desconocido'));
+      } else {
+        alert('Promoción creada exitosamente');
+        cargarPromociones();
+        document.getElementById('promoNombre').value = '';
+        document.getElementById('promoPrecio').value = '';
+        document.getElementById('promoDesc').value = '';
+        document.getElementById('promoCantidad').value = '5';
+      }
+    }
+
+    async function cargarPromociones() {
+      const { data } = await supabaseClient
+        .from('promociones_cartones')
+        .select('*')
+        .order('cantidad');
+
+      const container = document.getElementById('listaPromociones');
+
+      if (!data || data.length === 0) {
+        container.innerHTML = '<p style="color: rgba(255,255,255,0.5);">No hay promociones</p>';
+        return;
+      }
+
+      container.innerHTML = data.map(p => `
+        <div class="promo-item">
+          <div class="promo-info">
+            <h4>${p.nombre}</h4>
+            <p>${p.descripcion || ''} - ${p.cantidad} cartones</p>
+          </div>
+          <div style="text-align: right;">
+            <div class="promo-price">${Number(p.precio).toFixed(2)} Bs</div>
+            <div style="margin-top: 10px; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
+              <button onclick="togglePromo(${p.id}, ${!p.activa})"
+                style="padding: 5px 15px; border: none; border-radius: 5px; cursor: pointer; background: ${p.activa ? 'var(--danger)' : 'var(--success)'}; color: white;">
+                ${p.activa ? 'Desactivar' : 'Activar'}
+              </button>
+              <button onclick="eliminarPromo(${p.id})"
+                style="padding: 5px 15px; border: none; border-radius: 5px; cursor: pointer; background: #c0392b; color: white;">
+                🗑 Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      `).join('');
+    }
+async function eliminarPromo(id) {
+  const confirmar = confirm('¿Eliminar esta promoción? Esta acción no se puede deshacer.');
+
+  if (!confirmar) return;
+
+  const { data, error } = await supabaseClient.rpc('bingo_admin_promocion_seguro', {
+    p_token: tokenAdmin(),
+    p_accion: 'eliminar',
+    p_id: id
+  });
+
+  if (error || !data?.ok) {
+    console.error('Error eliminando promoción:', error);
+    alert('No se pudo eliminar: ' + error.message);
+    return;
+  }
+
+  alert('Promoción eliminada');
   await cargarPromociones();
 }
    async function togglePromo(id, activa) {
