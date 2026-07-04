@@ -484,11 +484,12 @@ begin
     raise exception 'Sesion de cliente invalida' using errcode = '42501';
   end if;
   return query
-    select m.id::bigint, m.tipo::text, m.monto, m.saldo_anterior, m.saldo_nuevo,
-           m.descripcion::text, m.referencia::text, m.creado_en
+    select m.id::bigint, m.tipo::text, m.monto::numeric,
+           m.saldo_anterior::numeric, m.saldo_nuevo::numeric,
+           m.descripcion::text, m.referencia::text, m.creado_en::timestamptz
       from public.billetera_movimientos m
      where m.usuario_id = v_usuario_id
-     order by m.creado_en desc limit 20;
+     order by m.creado_en desc limit 100;
 end;
 $$;
 
