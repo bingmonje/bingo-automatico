@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       usuarios:
-        description: 'Usuarios simultaneos (plan Free: maximo seguro 180)'
+        description: 'Usuarios simultaneos (limite operativo recomendado: 90)'
         required: true
         type: choice
         default: '25'
@@ -14,8 +14,6 @@ on:
           - '80'
           - '90'
           - '100'
-          - '150'
-          - '180'
       duracion:
         description: Duracion de la prueba
         required: true
@@ -53,7 +51,6 @@ jobs:
           docker run --rm \
             -e VUS='${{ inputs.usuarios }}' \
             -e DURATION='${{ inputs.duracion }}' \
-            -e HOLD_MS='115000' \
             -v "$PWD:/src" \
             -w /src \
             grafana/k6:latest run \
