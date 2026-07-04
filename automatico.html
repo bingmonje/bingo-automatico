@@ -751,22 +751,22 @@
         
         <div class="premio-card">
           <div class="premio-label">Dinero a repartir </div>
-          <div class="premio-value" id="premioPool">0.00 Bs</div>
+          <div class="premio-value" id="premioPool">0,00 Bs</div>
         </div>
        
       </div>
       <div class="premios-distribucion">
         <div class="premio-subcard">
           <strong>🏆 Premio cartón lleno </strong>
-          <span id="premioLleno">0.00 Bs</span>
+          <span id="premioLleno">0,00 Bs</span>
         </div>
         <div class="premio-subcard">
           <strong>➡️ Premio por fila </strong>
-          <span id="premioFila">0.00 Bs</span>
+          <span id="premioFila">0,00 Bs</span>
         </div>
         <div class="premio-subcard">
           <strong>⬇️ Premio por columna </strong>
-          <span id="premioColumna">0.00 Bs</span>
+          <span id="premioColumna">0,00 Bs</span>
         </div>
       </div>
     </div>
@@ -822,6 +822,7 @@
 
   </div>
 
+  <script src="moneda.js?v=20260704"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
@@ -1001,7 +1002,7 @@ let temporizadorReinicio = null;
     }
 
     function formatearBs(valor) {
-      return `${Number(valor || 0).toFixed(2)} Bs`;
+      return window.BingoMoneda?.conBs(valor) || `${Number(valor || 0).toFixed(2)} Bs`;
     }
 
     function actualizarResumenPremiosUI() {
@@ -1530,7 +1531,7 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
         await mostrarPremioTemporal(
           '🎉 ¡PREMIO POR FILA!',
           repartoFila.totalGanadores > 1
-            ? `Se dividió entre ${repartoFila.totalGanadores} ganadores. ${repartoFila.montoPorGanador.toFixed(2)} Bs c/u`
+            ? `Se dividió entre ${repartoFila.totalGanadores} ganadores. ${formatearBs(repartoFila.montoPorGanador)} c/u`
             : `${info.nombre} ganó con el cartón #${numeroCarton}`
         );
         return;
@@ -1544,7 +1545,7 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
         await mostrarPremioTemporal(
           '🎉 ¡PREMIO POR COLUMNA!',
           repartoColumna.totalGanadores > 1
-            ? `Se dividió entre ${repartoColumna.totalGanadores} ganadores. ${repartoColumna.montoPorGanador.toFixed(2)} Bs c/u`
+            ? `Se dividió entre ${repartoColumna.totalGanadores} ganadores. ${formatearBs(repartoColumna.montoPorGanador)} c/u`
             : `${info.nombre} ganó con el cartón #${numeroCarton}`
         );
         return;
