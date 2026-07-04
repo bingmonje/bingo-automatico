@@ -7,7 +7,17 @@ const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ';
 const VUS = Math.min(180, Math.max(1, Number(__ENV.VUS || 25)));
 const DURATION = __ENV.DURATION || '2m';
-const HOLD_MS = Math.max(30000, Number(__ENV.HOLD_MS || 115000));
+function durationToMs(value) {
+  const match = String(value).trim().match(/^(\d+(?:\.\d+)?)(ms|s|m|h)$/);
+  if (!match) return 120000;
+
+  const multipliers = { ms: 1, s: 1000, m: 60000, h: 3600000 };
+  return Number(match[1]) * multipliers[match[2]];
+}
+
+// Cada VU conserva una sola conexion durante toda la prueba. Se cierra cinco
+// segundos antes del maxDuration para que k6 pueda registrar el resultado.
+const HOLD_MS = Math.max(30000, durationToMs(DURATION) - 5000);
 
 const realtimeConnected = new Rate('realtime_connected');
 const realtimeJoined = new Rate('realtime_joined');
@@ -18,10 +28,10 @@ const realtimeJoinMs = new Trend('realtime_join_ms', true);
 export const options = {
   scenarios: {
     jugadores_sala: {
-      executor: 'constant-vus',
+      executor: 'per-vu-iterations',
       vus: VUS,
-      duration: DURATION,
-      gracefulStop: '10s',
+      iterations: 1,
+      maxDuration: DURATION,
       exec: 'jugadorSala',
     },
   },
