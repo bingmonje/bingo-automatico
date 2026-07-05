@@ -811,7 +811,7 @@
     <div class="ganador-content">
       <h1>🎉 ¡BINGO! 🎉</h1>
       <h2 id="ganadorTexto" style="color: #000; margin-bottom: 20px;"></h2>
-      <p style="color: #000; font-size: 1.2em; margin-bottom: 30px;">
+      <p id="ganadorDescripcion" style="color: #000; font-size: 1.2em; margin-bottom: 30px;">
         ¡Cartón completo! Has ganado el premio.
       </p>
       <button id="modalCloseBtn" onclick="cerrarModal()" style="background: #000; color: white; border: none; padding: 15px 40px; border-radius: 30px; font-size: 1.1em; cursor: pointer;">
@@ -2094,7 +2094,7 @@ const info = obtenerInfoCarton(numeroCarton);
         if (repartoFinal?.ok && !repartoFinal.duplicado) {
           colaPremios = [];
   premioTemporalActivo = false;
-  mostrarGanador(numeroCarton);
+  mostrarGanador(numeroCarton, info.nombre);
 
   if (temporizadorReinicio) clearTimeout(temporizadorReinicio);
   temporizadorReinicio = setTimeout(async () => {
@@ -2108,12 +2108,19 @@ const info = obtenerInfoCarton(numeroCarton);
       }
     }
 
-    function mostrarGanador(numeroCarton) {
+    function mostrarGanador(numeroCarton, ganadorNombre = '') {
       const modal = document.getElementById('modalGanador');
       const botonCerrar = document.getElementById('modalCloseBtn');
-      premiosMostrados.lleno = Number(numeroCarton);
+      const numero = Number(numeroCarton);
+      const info = obtenerInfoCarton(numero);
+      const nombre = String(ganadorNombre || info?.nombre || 'Jugador').trim();
+      const esGanadorLocal = cartonesComprados.includes(numero);
+      premiosMostrados.lleno = numero;
       document.querySelector('#modalGanador h1').textContent = '🎉 ¡BINGO! 🎉';
-      document.getElementById('ganadorTexto').textContent = `¡Cartón #${numeroCarton} completo!`;
+      document.getElementById('ganadorTexto').textContent = nombre;
+      document.getElementById('ganadorDescripcion').textContent = esGanadorLocal
+        ? `¡Cartón #${numero} completo! Has ganado el premio.`
+        : `¡Cartón #${numero} completo! Ganador del premio.`;
       if (botonCerrar) botonCerrar.style.display = 'inline-block';
       modal.classList.add('activo');
       crearConfeti();
@@ -2124,9 +2131,8 @@ const info = obtenerInfoCarton(numeroCarton);
   const previo = document.getElementById('resultadoFinalMsg');
   if (previo) previo.remove();
 
-  if (cartonesComprados.includes(ganadorNum)) {
-    mostrarGanador(ganadorNum);
-    return;
+  if (premiosMostrados.lleno !== ganadorNum) {
+    mostrarGanador(ganadorNum, ganadorNombre);
   }
 
   const estadoEl = document.getElementById('estadoJuego');
