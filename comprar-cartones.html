@@ -1031,7 +1031,8 @@
     let miApartadoId = null;
     let timerApartado = null;
     let tiempoRestante = 300;
-    let suscripcionTiempoReal = null;
+    let temporizadorEstadoCompra = null;
+    let actualizandoEstadoCompra = false;
     let pagoEnviado = false;
     let procesandoSeleccion = false;
     let ventasCerradas = false;
@@ -1040,7 +1041,7 @@
     let minimoCartonesInicio = 15;
     let cartonesVendidosProgramacion = 0;
     let cartonPreviewNumero = null;
-let cantidadCartonesDisponibles = 1000;
+let cantidadCartonesDisponibles = 80;
     let rotacionCartones = 0;
     let gridCartonesInicializado = false;
 
@@ -1078,18 +1079,10 @@ function requerirSesion() {
 }
 
 async function verificarVentasAbiertas() {
-  const { data, error } = await supabaseClient
-    .rpc('bingo_estado_programacion');
-
-  if (error) {
-    console.error('Error verificando el estado de ventas:', error);
+  const data = await cargarEstadoCartones();
+  if (!data) {
     return true;
   }
-
-  juegoProgramacionActual = data?.juego || null;
-  minimoCartonesInicio = Number(data?.minimo_cartones || 15);
-  cartonesVendidosProgramacion = Number(data?.cartones_vendidos || 0);
-  actualizarProgramacionVentas(juegoProgramacionActual);
 
   if (juegoProgramacionActual?.estado === 'jugando') {
     mostrarVentasCerradas(juegoProgramacionActual);
@@ -1373,15 +1366,16 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
 
   if (error) {
     console.error('Error cargando cantidad disponible:', error);
-    cantidadCartonesDisponibles = 1000;
+    cantidadCartonesDisponibles = 80;
     return;
   }
 
-  cantidadCartonesDisponibles = parseInt(data?.valor || '1000', 10);
+  cantidadCartonesDisponibles = parseInt(data?.valor || '80', 10);
 
   if (!Number.isInteger(cantidadCartonesDisponibles) || cantidadCartonesDisponibles < 1) {
-    cantidadCartonesDisponibles = 1000;
+    cantidadCartonesDisponibles = 80;
   }
+  cantidadCartonesDisponibles = Math.min(80, cantidadCartonesDisponibles);
 }
 
     function generarVariantesCedula(valor) {
@@ -1414,7 +1408,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
   if (!usuario) return;
 
   if (!await verificarVentasAbiertas()) {
-    iniciarSuscripcionTiempoReal();
+    iniciarActualizacionCompra();
     return;
   }
 
@@ -1432,7 +1426,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
   await cargarPromociones();
   await cargarSaldoUsuario();
   generarGridCartones();
-  iniciarSuscripcionTiempoReal();
+  iniciarActualizacionCompra();
 }
 
     async function cargarPrecioUnitario() {
@@ -1629,30 +1623,64 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
 }
 
     async function cargarEstadoCartones() {
-      const { data: ocupados } = await supabaseClient
-        .from('cartones_vendidos')
-        .select('numero_carton');
+      const usuario = obtenerUsuarioSesion();
+      if (!usuario?.token) return null;
 
-      cartonesOcupados = new Set((ocupados || []).map(c => Number(c.numero_carton)));
+      const respuesta = await supabaseClient.rpc('bingo_cliente_estado_compra_optimizado', {
+        p_token: usuario.token
+      });
+      let data = respuesta.data;
+      let error = respuesta.error;
+
+      if (error && (error.code === 'PGRST202' || /estado_compra_optimizado/i.test(error.message || ''))) {
+        const cincoMinAtras = new Date(Date.now() - 5 * 60000).toISOString();
+        const [programacionLegacy, vendidosLegacy, apartadosLegacy] = await Promise.all([
+          supabaseClient.rpc('bingo_estado_programacion'),
+          supabaseClient.from('cartones_vendidos').select('numero_carton').lte('numero_carton', 80),
+          supabaseClient.from('cartones_apartados')
+            .select('numero_carton, apartado_id, created_at')
+            .lte('numero_carton', 80)
+            .gte('created_at', cincoMinAtras)
+        ]);
+
+        if (!programacionLegacy.error && !vendidosLegacy.error && !apartadosLegacy.error) {
+          data = {
+            ok: true,
+            programacion: programacionLegacy.data,
+            vendidos: (vendidosLegacy.data || []).map(item => item.numero_carton),
+            apartados: apartadosLegacy.data || []
+          };
+          error = null;
+        }
+      }
+
+      if (error || !data?.ok) {
+        console.error('Error cargando estado optimizado de compra:', error || data?.codigo);
+        if (data?.codigo === 'sesion_invalida') {
+          localStorage.removeItem('usuario_bingo');
+          window.location.href = 'login.html';
+        }
+        return null;
+      }
+
+      const programacion = data.programacion || {};
+      juegoProgramacionActual = programacion.juego || null;
+      minimoCartonesInicio = Number(programacion.minimo_cartones || 15);
+      cartonesOcupados = new Set((data.vendidos || []).map(Number));
       cartonesVendidosProgramacion = cartonesOcupados.size;
-      actualizarProgramacionVentas(juegoProgramacionActual);
-
-      const cincoMinAtras = new Date(Date.now() - 5 * 60000).toISOString();
-      const { data: apartados } = await supabaseClient
-        .from('cartones_apartados')
-        .select('numero_carton, apartado_id, created_at')
-        .gte('created_at', cincoMinAtras);
 
       cartonesApartados = new Set();
-      (apartados || []).forEach(a => {
+      (data.apartados || []).forEach(a => {
         const tiempoPasado = (Date.now() - new Date(a.created_at).getTime()) / 1000;
         const numero = Number(a.numero_carton);
-        if (tiempoPasado < 300 && a.apartado_id !== miApartadoId) {
+        if (tiempoPasado < 300 && String(a.apartado_id) !== String(miApartadoId || '')) {
           cartonesApartados.add(numero);
         }
       });
 
+      actualizarProgramacionVentas(juegoProgramacionActual);
       actualizarVisualGrid();
+      return data;
     }
 
     function actualizarVisualGrid() {
@@ -2032,59 +2060,24 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
       actualizarStats();
     }
 
-    function iniciarSuscripcionTiempoReal() {
-      suscripcionTiempoReal = supabaseClient
-        .channel('cartones-tiempo-real')
-        .on('postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'cartones_apartados' },
-          (payload) => {
-            const numero = Number(payload.new.numero_carton);
-            if (payload.new.apartado_id !== miApartadoId && !cartonesSeleccionados.has(numero)) {
-              cartonesApartados.add(numero);
-              actualizarVisualGrid();
-            }
-          }
-        )
-        .on('postgres_changes',
-          { event: 'DELETE', schema: 'public', table: 'cartones_apartados' },
-          (payload) => {
-            cartonesApartados.delete(Number(payload.old.numero_carton));
-            actualizarVisualGrid();
-          }
-        )
-        .on('postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'cartones_vendidos' },
-          (payload) => {
-            cartonesOcupados.add(Number(payload.new.numero_carton));
-            cartonesApartados.delete(Number(payload.new.numero_carton));
-            cartonesSeleccionados.delete(Number(payload.new.numero_carton));
-            cartonesVendidosProgramacion = cartonesOcupados.size;
-            actualizarProgramacionVentas(juegoProgramacionActual);
-            actualizarVisualGrid();
-            actualizarStats();
-          }
-        )
-        .on('postgres_changes',
-          { event: 'DELETE', schema: 'public', table: 'cartones_vendidos' },
-          (payload) => {
-            cartonesOcupados.delete(Number(payload.old.numero_carton));
-            cartonesVendidosProgramacion = cartonesOcupados.size;
-            actualizarProgramacionVentas(juegoProgramacionActual);
-            actualizarVisualGrid();
-            actualizarStats();
-          }
-        )
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'bingo_automatico' },
-          async (payload) => {
-            juegoProgramacionActual = payload.new || null;
-            actualizarProgramacionVentas(juegoProgramacionActual);
-            const abiertas = juegoProgramacionActual?.estado !== 'jugando';
-            if (!abiertas) mostrarVentasCerradas(juegoProgramacionActual);
-            if (abiertas && ventasCerradas) window.location.reload();
-          }
-        )
-        .subscribe();
+    async function actualizarCompraPeriodicamente() {
+      if (document.hidden || actualizandoEstadoCompra) return;
+      actualizandoEstadoCompra = true;
+      try {
+        const data = await cargarEstadoCartones();
+        if (!data) return;
+
+        const abiertas = juegoProgramacionActual?.estado !== 'jugando';
+        if (!abiertas) mostrarVentasCerradas(juegoProgramacionActual);
+        if (abiertas && ventasCerradas) window.location.reload();
+      } finally {
+        actualizandoEstadoCompra = false;
+      }
+    }
+
+    function iniciarActualizacionCompra() {
+      if (temporizadorEstadoCompra) clearInterval(temporizadorEstadoCompra);
+      temporizadorEstadoCompra = setInterval(actualizarCompraPeriodicamente, 5000);
     }
 
     document.addEventListener('keydown', (event) => {
@@ -2094,9 +2087,7 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
     });
 
   window.addEventListener('beforeunload', () => {
-  if (suscripcionTiempoReal) {
-    try { suscripcionTiempoReal.unsubscribe(); } catch (_) {}
-  }
+  if (temporizadorEstadoCompra) clearInterval(temporizadorEstadoCompra);
   if (programacionVisualTimer) clearInterval(programacionVisualTimer);
 
   const step4 = document.getElementById('step4');
