@@ -79,8 +79,8 @@ begin
     select 1
       from public.cartones_vendidos cv
      where cv.comprador_id = v_usuario_id
-        or regexp_replace(coalesce(cv.cedula, ''), '\\D', '', 'g') =
-           regexp_replace(coalesce(v_cedula, ''), '\\D', '', 'g')
+        or regexp_replace(coalesce(cv.cedula, ''), '\D', '', 'g') =
+           regexp_replace(coalesce(v_cedula, ''), '\D', '', 'g')
   ) then
     return jsonb_build_object('ok', false, 'codigo', 'sin_cartones');
   end if;
