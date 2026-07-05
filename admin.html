@@ -3005,6 +3005,18 @@ async function cargarAjustes() {
         }
       }
 
+      if (!reinicioCompletado) {
+        document.getElementById('waitingMsg').style.display = 'block';
+        document.getElementById('waitingMsg').textContent = 'No se pudo reiniciar. El sistema conserva el estado anterior.';
+        await Promise.all([
+          checkCurrentGame(),
+          cargarVentas(),
+          updateApprovedPlayersCount(),
+          updateApprovedRevenueStats()
+        ]);
+        alert(`No se realizó el reinicio:\n\n${errores.join('\n')}`);
+        return;
+      }
       document.getElementById('winnerDisplay').classList.remove('active');
       document.getElementById('winnerFila').classList.remove('active');
 document.getElementById('winnerColumna').classList.remove('active');
