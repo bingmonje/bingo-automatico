@@ -13,7 +13,6 @@ on:
           - '50'
           - '80'
           - '90'
-          - '100'
       duracion:
         description: Duracion de la prueba
         required: true
@@ -65,4 +64,3 @@ jobs:
           path: load-tests/output.txt
           if-no-files-found: warn
           retention-days: 14
-
