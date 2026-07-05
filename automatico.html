@@ -1843,12 +1843,7 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
     actualizarCuentaJuegoCliente(data);
 
     if (data.estado === 'finalizado') {
-      document.getElementById('estadoJuego').className = 'estado-juego estado-esperando';
-      document.getElementById('estadoJuego').textContent = '⏳ ESPERANDO NUEVO JUEGO...';
-      document.getElementById('bolaActual').style.display = 'none';
-      document.getElementById('esperandoMensaje').style.display = 'block';
-      document.getElementById('esperandoMensaje').textContent =
-        'Esperando que el administrador inicie un nuevo juego...';
+      await manejarCambioJuego(data, null);
       return;
     }
 
@@ -2116,7 +2111,7 @@ const info = obtenerInfoCarton(numeroCarton);
       const nombre = String(ganadorNombre || info?.nombre || 'Jugador').trim();
       const esGanadorLocal = cartonesComprados.includes(numero);
       premiosMostrados.lleno = numero;
-      document.querySelector('#modalGanador h1').textContent = '🎉 ¡BINGO! 🎉';
+      document.querySelector('#modalGanador h1').textContent = '🏆 ¡CARTÓN LLENO! 🏆';
       document.getElementById('ganadorTexto').textContent = nombre;
       document.getElementById('ganadorDescripcion').textContent = esGanadorLocal
         ? `¡Cartón #${numero} completo! Has ganado el premio.`
@@ -2183,7 +2178,7 @@ const info = obtenerInfoCarton(numeroCarton);
       document.getElementById('modalGanador').classList.remove('activo');
       const botonCerrar = document.getElementById('modalCloseBtn');
       if (botonCerrar) botonCerrar.style.display = 'inline-block';
-      document.querySelector('#modalGanador h1').textContent = '🎉 ¡BINGO! 🎉';
+      document.querySelector('#modalGanador h1').textContent = '🏆 ¡CARTÓN LLENO! 🏆';
     }
 
     function mostrarError(mensaje) {
