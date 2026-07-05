@@ -894,7 +894,7 @@
 
     function iniciarTiempoRealRecargas(usuario) {
       if (!usuario?.token || canalRecargasCuenta) return;
-      canalRecargasCuenta = setInterval(comprobarCambiosCuenta, 5000);
+      canalRecargasCuenta = setInterval(comprobarCambiosCuenta, 10000);
     }
 
 async function decodificarImagenRecarga(file) {
