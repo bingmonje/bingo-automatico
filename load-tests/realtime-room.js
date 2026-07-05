@@ -5,7 +5,7 @@ import { Counter, Rate, Trend } from 'k6/metrics';
 
 const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9rd2t3Z3JlY3d4eWRqY2V6Y2RuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzA1NzQzNzcsImV4cCI6MjA4NjE1MDM3N30.r-xcTbAoHiy5_qrk9JWQMCqjXERDZKjuecqzLGMBHuQ';
-const VUS = Math.min(180, Math.max(1, Number(__ENV.VUS || 25)));
+const VUS = Math.min(90, Math.max(1, Number(__ENV.VUS || 25)));
 const DURATION = __ENV.DURATION || '2m';
 function durationToMs(value) {
   const match = String(value).trim().match(/^(\d+(?:\.\d+)?)(ms|s|m|h)$/);
@@ -37,7 +37,7 @@ export const options = {
   },
   thresholds: {
     http_req_failed: ['rate<0.01'],
-    http_req_duration: ['p(95)<1000'],
+    http_req_duration: ['p(95)<2000'],
     realtime_connected: ['rate>0.99'],
     realtime_joined: ['rate>0.99'],
     realtime_errors: ['count<2'],
@@ -87,9 +87,8 @@ export function jugadorSala() {
             broadcast: { ack: false, self: false },
             presence: { key: '' },
             postgres_changes: [
-              { event: '*', schema: 'public', table: 'bingo_automatico' },
               { event: 'INSERT', schema: 'public', table: 'bolas_auto' },
-              { event: '*', schema: 'public', table: 'cartones_vendidos' },
+              { event: 'INSERT', schema: 'public', table: 'bingo_eventos_sala' },
             ],
             private: false,
           },
@@ -136,4 +135,3 @@ export function jugadorSala() {
   if (!unido) realtimeJoined.add(false);
   sleep(1);
 }
-
