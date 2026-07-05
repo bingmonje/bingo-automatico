@@ -849,13 +849,24 @@
     let reinicioProgramado = false;
 let temporizadorReinicio = null;
     let rotacionCartones = 0;
-    let refrescoCartonesTimer = null;
-    let refrescoPremiosTimer = null;
     let cuentaJuegoTimer = null;
     let juegoCuentaActual = null;
     let minimoCartonesInicio = 15;
     let cartonesVendidosProgramacion = 0;
     let vozBingoActiva = localStorage.getItem('vozBingoActiva') !== 'false';
+    const SALA_TAB_ID = (() => {
+      const existente = sessionStorage.getItem('bingo_sala_tab_id');
+      if (existente) return existente;
+      const nuevo = self.crypto?.randomUUID?.()
+        || `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+      sessionStorage.setItem('bingo_sala_tab_id', nuevo);
+      return nuevo;
+    })();
+    let cupoSalaActivo = false;
+    let latidoSalaTimer = null;
+    let refrescoSalaEsperaTimer = null;
+    let temporizadorSalidaSala = null;
+    let modoCompatibilidadRealtime = false;
 
     const RANGOS = {
       B: [1, 15], I: [16, 30], N: [31, 45], G: [46, 60], O: [61, 75]
@@ -1044,6 +1055,7 @@ let temporizadorReinicio = null;
       const { data, error } = await supabaseClient
         .from('cartones_vendidos')
         .select('numero_carton, nombre, cedula, telefono')
+        .lte('numero_carton', 80)
         .order('numero_carton', { ascending: true });
 
       if (error) {
@@ -1082,6 +1094,120 @@ let temporizadorReinicio = null;
       renderizarPaginaCartones();
     }
 
+   async function solicitarCupoSala() {
+      const usuario = requerirSesion();
+      if (!usuario?.token) return false;
+
+      const { data, error } = await supabaseClient.rpc('bingo_cliente_entrar_sala_optimizada', {
+        p_token: usuario.token,
+        p_tab_id: SALA_TAB_ID
+      });
+
+      if (error && (error.code === 'PGRST202' || /entrar_sala_optimizada/i.test(error.message || ''))) {
+        modoCompatibilidadRealtime = true;
+        return true;
+      }
+
+      if (error || !data?.ok) {
+        const codigo = data?.codigo || error?.message || 'error';
+        if (codigo === 'sala_llena') {
+          mostrarEstadoIngreso('La sala está llena (80/80). Intenta nuevamente en unos minutos.', 'warning');
+        } else if (codigo === 'cuenta_ya_conectada') {
+          mostrarEstadoIngreso('Tu cuenta ya tiene la sala abierta en otra pestaña o dispositivo.', 'warning');
+        } else if (codigo === 'sin_cartones') {
+          mostrarEstadoIngreso('Necesitas al menos un cartón aprobado para entrar.', 'warning');
+        } else if (codigo === 'sesion_invalida') {
+          localStorage.removeItem('usuario_bingo');
+          window.location.href = 'login.html';
+        } else {
+          mostrarEstadoIngreso('No se pudo reservar tu cupo en la sala. Intenta nuevamente.', 'danger');
+        }
+        return false;
+      }
+
+      cupoSalaActivo = true;
+      clearInterval(latidoSalaTimer);
+      latidoSalaTimer = setInterval(enviarLatidoSala, 25000);
+      return true;
+    }
+
+    async function enviarLatidoSala() {
+      if (!cupoSalaActivo) return;
+      const usuario = requerirSesion();
+      if (!usuario?.token) return;
+
+      const { data, error } = await supabaseClient.rpc('bingo_cliente_latido_sala_optimizada', {
+        p_token: usuario.token,
+        p_tab_id: SALA_TAB_ID
+      });
+
+      if (error || !data?.ok) {
+        cupoSalaActivo = false;
+        clearInterval(latidoSalaTimer);
+        desconectarRealtimeSala();
+        mostrarError('Se perdió el cupo de la sala. Vuelve a ingresar.');
+      }
+    }
+
+    async function liberarCupoSala() {
+      if (!cupoSalaActivo) return;
+      cupoSalaActivo = false;
+      clearInterval(latidoSalaTimer);
+      const usuario = requerirSesion();
+      if (!usuario?.token) return;
+      try {
+        await supabaseClient.rpc('bingo_cliente_salir_sala_optimizada', {
+          p_token: usuario.token,
+          p_tab_id: SALA_TAB_ID
+        });
+      } catch (_) {}
+    }
+
+    function liberarCupoSalaAlCerrar() {
+      if (!cupoSalaActivo) return;
+      cupoSalaActivo = false;
+      const usuario = requerirSesion();
+      if (!usuario?.token) return;
+      try {
+        fetch(`${SUPABASE_URL}/rest/v1/rpc/bingo_cliente_salir_sala_optimizada`, {
+          method: 'POST',
+          headers: {
+            apikey: SUPABASE_KEY,
+            Authorization: `Bearer ${SUPABASE_KEY}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ p_token: usuario.token, p_tab_id: SALA_TAB_ID }),
+          keepalive: true
+        });
+      } catch (_) {}
+    }
+
+    function iniciarRefrescoSalaEnEspera() {
+      clearInterval(refrescoSalaEsperaTimer);
+      refrescoSalaEsperaTimer = setInterval(async () => {
+        if (document.hidden || !cupoSalaActivo || juegoCuentaActual?.estado === 'jugando') return;
+        await Promise.all([cargarCartonesEnSala(), cargarResumenPremios()]);
+        if (modoVistaCartones === 'todos') renderizarPaginaCartones();
+      }, 5000);
+    }
+
+    function desconectarRealtimeSala() {
+      suscripciones.forEach(s => {
+        try { s.unsubscribe(); } catch (_) {}
+      });
+      suscripciones = [];
+    }
+
+    function programarSalidaSalaFinalizada() {
+      if (temporizadorSalidaSala) return;
+      desconectarRealtimeSala();
+      clearInterval(refrescoSalaEsperaTimer);
+      liberarCupoSala();
+      temporizadorSalidaSala = setTimeout(() => {
+        window.location.href = 'comprar-cartones.html';
+      }, 20000);
+    }
+
    async function init() {
   await cargarRotacionCartones();
 
@@ -1100,6 +1226,8 @@ let temporizadorReinicio = null;
           return;
         }
 
+        if (!await solicitarCupoSala()) return;
+
         mostrarEstadoIngreso('Buscando tus cartones aprobados...', 'success');
 
         const variantes = generarVariantesCedula(cedulaInput);
@@ -1108,6 +1236,7 @@ let temporizadorReinicio = null;
           .from('cartones_vendidos')
           .select('numero_carton, nombre, cedula')
           .in('cedula', variantes)
+          .lte('numero_carton', 80)
           .order('numero_carton', { ascending: true });
 
         if (error) throw error;
@@ -1125,6 +1254,7 @@ let temporizadorReinicio = null;
           } else {
             mostrarEstadoIngreso('No encontramos cartones aprobados con esa cédula.', 'danger');
           }
+          await liberarCupoSala();
           return;
         }
 
@@ -1155,6 +1285,7 @@ let temporizadorReinicio = null;
         abrirJuego();
       } catch (error) {
         console.error('❌ Error entrando al juego:', error);
+        await liberarCupoSala();
         mostrarEstadoIngreso('No se pudo validar la cédula. Intenta de nuevo.', 'danger');
       }
     }
@@ -1194,6 +1325,7 @@ let temporizadorReinicio = null;
       limpiarVistaJuego();
       mostrarPantallaJuego();
       iniciarSuscripciones();
+      iniciarRefrescoSalaEnEspera();
       verificarEstadoActual();
     }
 
@@ -1575,54 +1707,45 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
       }
     }
 
-
-    function programarRefrescoCartones() {
-      clearTimeout(refrescoCartonesTimer);
-      refrescoCartonesTimer = setTimeout(async () => {
-        refrescoCartonesTimer = null;
-        await cargarCartonesEnSala();
-        if (modoVistaCartones === 'todos') {
-          renderizarPaginaCartones();
-        }
-      }, 350);
-    }
-
-    function programarRefrescoPremios() {
-      clearTimeout(refrescoPremiosTimer);
-      refrescoPremiosTimer = setTimeout(async () => {
-        refrescoPremiosTimer = null;
-        await cargarResumenPremios();
-      }, 350);
-    }
-
     function iniciarSuscripciones() {
-      suscripciones.forEach(s => {
-        try { s.unsubscribe(); } catch (_) {}
-      });
-      suscripciones = [];
+      desconectarRealtimeSala();
 
-      const salaSub = supabaseClient
+      let salaSub = supabaseClient
         .channel('bingo-sala-' + Date.now() + '-' + Math.random().toString(36).slice(2))
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'bingo_automatico' },
-          (payload) => {
-            manejarCambioJuego(payload.new, payload.old || null);
-          }
-        )
         .on('postgres_changes',
           { event: 'INSERT', schema: 'public', table: 'bolas_auto' },
           (payload) => {
             recibirBola(payload.new);
           }
-        )
-        .on('postgres_changes',
-          { event: '*', schema: 'public', table: 'cartones_vendidos' },
-          () => {
-            programarRefrescoPremios();
-            programarRefrescoCartones();
+        );
+
+      if (modoCompatibilidadRealtime) {
+        salaSub = salaSub
+          .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'bingo_automatico' },
+            (payload) => manejarCambioJuego(payload.new, payload.old || null)
+          )
+          .on('postgres_changes',
+            { event: '*', schema: 'public', table: 'cartones_vendidos' },
+            async () => {
+              await Promise.all([cargarCartonesEnSala(), cargarResumenPremios()]);
+              if (modoVistaCartones === 'todos') renderizarPaginaCartones();
+            }
+          );
+      } else {
+        salaSub = salaSub.on('postgres_changes',
+          { event: 'INSERT', schema: 'public', table: 'bingo_eventos_sala' },
+          async () => {
+            await verificarEstadoActual();
+            if (juegoCuentaActual?.estado !== 'jugando') {
+              await cargarCartonesEnSala();
+              await cargarResumenPremios();
+            }
           }
-        )
-        .subscribe();
+        );
+      }
+
+      salaSub.subscribe();
 
       suscripciones.push(salaSub);
     }
@@ -1803,6 +1926,7 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
           if (juego.ganador_id) {
            mostrarGanadorFinal(juego.ganador_id, juego.ganador_nombre, false);
           }
+          programarSalidaSalaFinalizada();
           break;
       }
     }
@@ -2225,13 +2349,13 @@ document.getElementById('esperandoMensaje').textContent =
 }
 
     window.addEventListener('beforeunload', () => {
-  suscripciones.forEach(s => {
-    try { s.unsubscribe(); } catch (_) {}
-  });
+  desconectarRealtimeSala();
+  liberarCupoSalaAlCerrar();
   if (temporizadorReinicio) clearTimeout(temporizadorReinicio);
+  if (temporizadorSalidaSala) clearTimeout(temporizadorSalidaSala);
   if (cuentaJuegoTimer) clearInterval(cuentaJuegoTimer);
-  clearTimeout(refrescoCartonesTimer);
-  clearTimeout(refrescoPremiosTimer);
+  if (latidoSalaTimer) clearInterval(latidoSalaTimer);
+  if (refrescoSalaEsperaTimer) clearInterval(refrescoSalaEsperaTimer);
 });
     init();
   </script>
