@@ -510,7 +510,7 @@ begin
     return jsonb_build_object('ok', false, 'codigo', 'rate_limit', 'reintentar_en', v_limite->'reintentar_en');
   end if;
   if coalesce(p_monto, 0) <= 0 or p_monto > 100000000
-     or coalesce(p_referencia, '') !~ '^[0-9]{4}$'
+     or coalesce(p_referencia, '') !~ '^[0-9]{6}$'
      or length(coalesce(p_comprobante_url, '')) < 20
      or length(p_comprobante_url) > 1000 then
     return jsonb_build_object('ok', false, 'codigo', 'datos_invalidos');
@@ -662,7 +662,8 @@ begin
         activo = true,
         actualizado_en = now();
 
-  delete from public.bingo_admin_sesiones;
+  delete from public.bingo_admin_sesiones
+   where token_hash is not null;
 end;
 $$;
 
