@@ -1481,12 +1481,11 @@ function mostrarVentasCerradas(juego = juegoProgramacionActual) {
 
       const personalizado = document.createElement('div');
       personalizado.className = 'promo-card';
-      personalizado.style.background = 'rgba(255,255,255,0.05)';
       personalizado.onclick = () => mostrarSelectorManual();
       personalizado.innerHTML = `
-        <div class="promo-titulo" style="color: #aaa;">Personalizado</div>
+        <div class="promo-titulo">Personalizado</div>
         <div class="promo-descripcion">Elige la cantidad que desees</div>
-        <div class="promo-precio" style="font-size: 1.5em; color: #aaa;">${formatearBs(precioUnitario)}/cartón</div>
+        <div class="promo-precio" style="font-size: 1.5em;">${formatearBs(precioUnitario)}/cartón</div>
       `;
       container.appendChild(personalizado);
     }
