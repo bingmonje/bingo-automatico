@@ -678,6 +678,9 @@
         <div class="nav-item" onclick="showSection('retiros', this)">
   <span>🏧</span> Retiros <span id="badgeRetiros" class="nav-count">0</span>
 </div>
+        <div class="nav-item" onclick="showSection('movimientos-pagos', this)">
+          <span>📊</span> Movimientos de pagos
+        </div>
         <div class="nav-item" onclick="showSection('recuperaciones', this)">
           <span>🔑</span> Recuperar PIN <span id="badgeRecuperaciones" class="nav-count">0</span>
         </div>
@@ -851,6 +854,28 @@
 <div id="sec-retiros" class="section">
   <h2>🏧 Retiros pendientes</h2>
   <div id="listaRetiros"></div>
+</div>
+<div id="sec-movimientos-pagos" class="section">
+  <h2 class="section-title">📊 Movimientos de recargas y retiros</h2>
+  <div class="data-table" style="overflow-x:auto;">
+    <table style="width:100%;">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Tipo</th>
+          <th>Cliente</th>
+          <th>Cédula</th>
+          <th>Monto</th>
+          <th>Referencia</th>
+          <th>Estado</th>
+          <th>Comprobante</th>
+        </tr>
+      </thead>
+      <tbody id="tablaMovimientosPagosAdmin">
+        <tr><td colspan="8" style="text-align:center; padding:30px;">Abre esta sección para cargar los movimientos.</td></tr>
+      </tbody>
+    </table>
+  </div>
 </div>
       <!-- SECCIÓN: RECUPERACIÓN DE PIN -->
       <div id="sec-recuperaciones" class="section">
@@ -1237,21 +1262,29 @@
 
   pintarContadorPendiente('badgeRecargas', data.length);
 
-  contenedor.innerHTML = data.map(r => `
-    <div class="card-recarga" id="recarga-${r.id}">
-      <p><strong>${escaparHtmlAdmin(r.nombre || 'Jugador')}</strong></p>
-      <p>Cédula: ${numeroNormalAdmin(r.cedula, 12) || '-'}</p>
-      <p>Monto: ${formatearBs(r.monto)}</p>
-      <p>Ref: ${r.referencia_pago}</p>
+  contenedor.innerHTML = data.map(r => {
+    const comprobante = String(r.comprobante_url || '');
+    const comprobanteCodificado = encodeURIComponent(comprobante);
+    const referencia = numeroNormalAdmin(r.referencia_pago, 6) || '-';
+    const enlace = comprobante
+      ? `<a href="${escaparHtmlAdmin(comprobante)}" target="_blank" rel="noopener noreferrer">Ver comprobante WebP</a>`
+      : '<span style="color:var(--warning);">Sin comprobante</span>';
 
-      <a href="${r.comprobante_url}" target="_blank">Ver comprobante</a>
+    return `
+      <div class="card-recarga" id="recarga-${r.id}">
+        <p><strong>${escaparHtmlAdmin(r.nombre || 'Jugador')}</strong></p>
+        <p>Cédula: ${numeroNormalAdmin(r.cedula, 12) || '-'}</p>
+        <p>Monto: ${formatearBs(r.monto)}</p>
+        <p>Últimos 6 de referencia: ${referencia}</p>
+        ${enlace}
 
-      <div class="acciones">
-        <button onclick="aprobarRecarga(${r.id})">✅ Aprobar</button>
-        <button onclick="rechazarRecarga(${r.id})">❌ Rechazar</button>
+        <div class="acciones">
+          <button data-comprobante="${comprobanteCodificado}" onclick="aprobarRecarga(${r.id}, this.dataset.comprobante)">✅ Aprobar</button>
+          <button data-comprobante="${comprobanteCodificado}" onclick="rechazarRecarga(${r.id}, this.dataset.comprobante)">❌ Rechazar</button>
+        </div>
       </div>
-    </div>
-  `).join('');
+    `;
+  }).join('');
 }
     
     function numeroNormalAdmin(valor, maximo = 15) {
@@ -1468,7 +1501,7 @@ async function rechazarRecuperacionPin(id) {
   }
 
   document.getElementById(`retiro-${id}`)?.remove();
-  await Promise.all([cargarRetirosPendientes(), actualizarContadoresPendientes()]);
+  await Promise.all([cargarRetirosPendientes(), actualizarContadoresPendientes(), refrescarMovimientosPagosSiVisible()]);
   alert('Retiro aprobado');
 }
     
@@ -1484,40 +1517,163 @@ async function rechazarRecuperacionPin(id) {
   }
 
   document.getElementById(`retiro-${id}`)?.remove();
-  await Promise.all([cargarRetirosPendientes(), actualizarContadoresPendientes()]);
+  await Promise.all([cargarRetirosPendientes(), actualizarContadoresPendientes(), refrescarMovimientosPagosSiVisible()]);
   alert('Retiro rechazado');
 }
     
-    async function aprobarRecarga(recargaId) {
-  const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_recarga_seguro', {
-    p_token: tokenAdmin(),
-    p_recarga_id: recargaId
-  });
+    function extraerRutaComprobanteRecarga(url) {
+      const texto = String(url || '');
+      const marcadores = [
+        '/storage/v1/object/public/comprobantes/',
+        '/storage/v1/object/sign/comprobantes/',
+        '/storage/v1/object/authenticated/comprobantes/'
+      ];
 
-  if (error || !data?.ok) {
-    alert('No se pudo aprobar la recarga: ' + (error?.message || data?.codigo || 'error desconocido'));
-    return;
-  }
+      for (const marcador of marcadores) {
+        const posicion = texto.indexOf(marcador);
+        if (posicion === -1) continue;
+        const codificada = texto.slice(posicion + marcador.length).split('?')[0];
+        let ruta = codificada;
+        try { ruta = decodeURIComponent(codificada); } catch (_) {}
+        const archivo = ruta.split('/').pop() || '';
+        if (ruta.includes('..') || !archivo.startsWith('recarga_') || !archivo.toLowerCase().endsWith('.webp')) {
+          return null;
+        }
+        return ruta;
+      }
+      return null;
+    }
 
-  document.getElementById(`recarga-${recargaId}`)?.remove();
-  await Promise.all([cargarRecargasPendientes(), actualizarContadoresPendientes()]);
-  alert('Recarga aprobada correctamente');
-}
-    async function rechazarRecarga(recargaId) {
-  const { error } = await supabaseClient.rpc('bingo_admin_rechazar_recarga_seguro', {
-    p_token: tokenAdmin(),
-    p_recarga_id: recargaId
-  });
+    async function eliminarComprobanteRecargaStorage(recargaId, comprobanteCodificado) {
+      if (!comprobanteCodificado) return false;
+      let url = comprobanteCodificado;
+      try { url = decodeURIComponent(comprobanteCodificado); } catch (_) {}
+      if (!url) return false;
 
-  if (error) {
-    alert('No se pudo rechazar la recarga: ' + error.message);
-    return;
-  }
+      const ruta = extraerRutaComprobanteRecarga(url);
+      if (!ruta) throw new Error('La ruta del comprobante no es válida.');
 
-  document.getElementById(`recarga-${recargaId}`)?.remove();
-  await Promise.all([cargarRecargasPendientes(), actualizarContadoresPendientes()]);
-  alert('Recarga rechazada');
-}
+      const { error: storageError } = await supabaseClient.storage
+        .from('comprobantes')
+        .remove([ruta]);
+      if (storageError) throw storageError;
+
+      const { data, error } = await supabaseClient.rpc(
+        'bingo_admin_marcar_comprobante_recarga_eliminado_seguro',
+        { p_token: tokenAdmin(), p_recarga_id: Number(recargaId) }
+      );
+      if (error || !data?.ok) {
+        throw new Error(error?.message || data?.codigo || 'No se pudo limpiar la URL del comprobante');
+      }
+      return true;
+    }
+
+    function movimientosPagosVisible() {
+      return document.getElementById('sec-movimientos-pagos')?.classList.contains('active');
+    }
+
+    async function refrescarMovimientosPagosSiVisible() {
+      if (movimientosPagosVisible()) await cargarMovimientosPagosAdmin();
+    }
+
+    async function aprobarRecarga(recargaId, comprobanteCodificado = '') {
+      const { data, error } = await supabaseClient.rpc('bingo_admin_aprobar_recarga_seguro', {
+        p_token: tokenAdmin(),
+        p_recarga_id: recargaId
+      });
+
+      if (error || !data?.ok) {
+        alert('No se pudo aprobar la recarga: ' + (error?.message || data?.codigo || 'error desconocido'));
+        return;
+      }
+
+      let avisoLimpieza = '';
+      try {
+        await eliminarComprobanteRecargaStorage(recargaId, comprobanteCodificado);
+      } catch (limpiezaError) {
+        console.error('Error eliminando comprobante aprobado:', limpiezaError);
+        avisoLimpieza = '\nLa recarga fue aprobada, pero el comprobante quedó pendiente de eliminar.';
+      }
+
+      document.getElementById(`recarga-${recargaId}`)?.remove();
+      await Promise.all([cargarRecargasPendientes(), actualizarContadoresPendientes(), refrescarMovimientosPagosSiVisible()]);
+      alert('Recarga aprobada correctamente' + avisoLimpieza);
+    }
+
+    async function rechazarRecarga(recargaId, comprobanteCodificado = '') {
+      const { data, error } = await supabaseClient.rpc('bingo_admin_rechazar_recarga_seguro', {
+        p_token: tokenAdmin(),
+        p_recarga_id: recargaId
+      });
+
+      if (error || !data?.ok) {
+        alert('No se pudo rechazar la recarga: ' + (error?.message || data?.codigo || 'error desconocido'));
+        return;
+      }
+
+      let avisoLimpieza = '';
+      try {
+        await eliminarComprobanteRecargaStorage(recargaId, comprobanteCodificado);
+      } catch (limpiezaError) {
+        console.error('Error eliminando comprobante rechazado:', limpiezaError);
+        avisoLimpieza = '\nLa recarga fue rechazada, pero el comprobante quedó pendiente de eliminar.';
+      }
+
+      document.getElementById(`recarga-${recargaId}`)?.remove();
+      await Promise.all([cargarRecargasPendientes(), actualizarContadoresPendientes(), refrescarMovimientosPagosSiVisible()]);
+      alert('Recarga rechazada' + avisoLimpieza);
+    }
+
+    async function reintentarEliminarComprobanteRecarga(recargaId, comprobanteCodificado) {
+      try {
+        await eliminarComprobanteRecargaStorage(recargaId, comprobanteCodificado);
+        await cargarMovimientosPagosAdmin();
+        alert('Comprobante eliminado correctamente.');
+      } catch (error) {
+        alert('No se pudo eliminar el comprobante: ' + (error.message || 'error desconocido'));
+      }
+    }
+
+    async function cargarMovimientosPagosAdmin() {
+      const cuerpo = document.getElementById('tablaMovimientosPagosAdmin');
+      cuerpo.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px;">Cargando...</td></tr>';
+
+      const { data, error } = await supabaseClient.rpc('bingo_admin_listar_movimientos_pago_seguro', {
+        p_token: tokenAdmin()
+      });
+
+      if (error) {
+        cuerpo.innerHTML = `<tr><td colspan="8" style="text-align:center; padding:30px;">No se pudieron cargar los movimientos. ${escaparHtmlAdmin(error.message || '')}</td></tr>`;
+        return;
+      }
+      if (!data?.length) {
+        cuerpo.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:30px;">No hay movimientos todavía.</td></tr>';
+        return;
+      }
+
+      cuerpo.innerHTML = data.map(m => {
+        const tipo = m.tipo === 'recarga' ? '💳 Recarga' : '🏧 Retiro';
+        const referencia = m.tipo === 'recarga' ? (numeroNormalAdmin(m.referencia, 6) || '-') : '-';
+        const fechaBase = m.procesado_en || m.solicitado_en;
+        const fecha = fechaBase ? new Date(fechaBase).toLocaleString('es-VE') : '-';
+        const estado = escaparHtmlAdmin(m.estado || '-');
+        const comprobanteCodificado = encodeURIComponent(String(m.comprobante_url || ''));
+        const accion = m.tipo === 'recarga' && m.estado !== 'pendiente' && m.comprobante_url
+          ? `<button data-comprobante="${comprobanteCodificado}" onclick="reintentarEliminarComprobanteRecarga(${Number(m.solicitud_id)}, this.dataset.comprobante)">🗑️ Eliminar pendiente</button>`
+          : (m.tipo === 'recarga' ? 'Eliminado' : '-');
+
+        return `<tr>
+          <td>${escaparHtmlAdmin(fecha)}</td>
+          <td>${tipo}</td>
+          <td>${escaparHtmlAdmin(m.nombre || 'Jugador')}</td>
+          <td>${numeroNormalAdmin(m.cedula, 12) || '-'}</td>
+          <td>${formatearBs(m.monto)}</td>
+          <td>${referencia}</td>
+          <td>${estado}</td>
+          <td>${accion}</td>
+        </tr>`;
+      }).join('');
+    }
 
     async function login() {
       prepararSonidoNotificaciones();
@@ -1607,6 +1763,7 @@ async function rechazarRecuperacionPin(id) {
         config: 'Ajustes',
         recargas: 'Recargas de usuarios',
         retiros: 'Retiros de usuarios',
+        'movimientos-pagos': 'Movimientos de recargas y retiros',
         recuperaciones: 'Recuperación de PIN',
         clientes: 'Clientes y saldos'
       };
@@ -1618,6 +1775,7 @@ async function rechazarRecuperacionPin(id) {
       if (section === 'config') cargarAjustes();
       if (section === 'recargas') cargarRecargasPendientes();
       if (section === 'retiros') cargarRetirosPendientes();
+      if (section === 'movimientos-pagos') cargarMovimientosPagosAdmin();
       if (section === 'recuperaciones') cargarRecuperacionesPin();
       if (section === 'clientes') cargarClientesSaldos();
     }
