@@ -216,6 +216,21 @@
       transition: transform .2s ease, box-shadow .2s ease;
     }
     .mi-cuenta-enlace:hover { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(0,0,0,.4); }
+
+    .login-legal {
+      width: 100%;
+      margin: 18px auto 0;
+      padding: 0 12px;
+      color: rgba(255,255,255,.62);
+      font-size: .82em;
+      line-height: 1.8;
+      text-align: center;
+    }
+    .login-legal a {
+      display: inline-block;
+      color: #f9d949;
+      margin: 0 6px;
+    }
     @media (max-width: 600px) { .mi-cuenta-enlace { padding: 9px 13px; font-size: .9em; } }
   </style>
 </head>
@@ -288,12 +303,12 @@
       </div>
 
     </div>
-  </div>
 
-  <div style="margin:22px auto; max-width:520px; padding:0 16px; color:rgba(255,255,255,.62); font-size:.82em; line-height:1.8; text-align:center;">
-    <a href="privacidad.html" style="color:#f9d949; margin:0 6px;">Política de privacidad</a>
-    <a href="aviso-legal.html" style="color:#f9d949; margin:0 6px;">Aviso legal</a>
-    <a href="terminos-condiciones.html" style="color:#f9d949; margin:0 6px;">Términos y condiciones</a>
+    <div class="login-legal">
+      <a href="privacidad.html">Política de privacidad</a>
+      <a href="aviso-legal.html">Aviso legal</a>
+      <a href="terminos-condiciones.html">Términos y condiciones</a>
+    </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -479,3 +494,4 @@
 
 </body>
 </html>
+
