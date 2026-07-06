@@ -465,8 +465,8 @@
     </div>
 
     <div class="input-group">
-      <label for="referenciaRecarga">Últimos 4 dígitos de referencia</label>
-      <input type="text" id="referenciaRecarga" placeholder="Ej: 1234" maxlength="4">
+      <label for="referenciaRecarga">Últimos 6 dígitos de referencia</label>
+      <input type="text" id="referenciaRecarga" inputmode="numeric" pattern="[0-9]{6}" placeholder="Ej: 123456" maxlength="6" oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)">
     </div>
 
     <div class="input-group">
@@ -959,6 +959,7 @@ async function solicitarRecarga() {
   const file = document.getElementById('comprobanteRecarga').files[0];
   const mensaje = document.getElementById('mensajeRecarga');
   const btn = document.getElementById('btnEnviarRecarga');
+  let rutaComprobanteSubida = '';
 
   mensaje.className = 'mensaje-recarga';
   mensaje.textContent = '';
@@ -969,9 +970,9 @@ async function solicitarRecarga() {
     return;
   }
 
-  if (!/^\d{4}$/.test(referencia)) {
+  if (!/^\d{6}$/.test(referencia)) {
     mensaje.className = 'mensaje-recarga warn';
-    mensaje.textContent = 'Ingresa los últimos 4 dígitos de la referencia.';
+    mensaje.textContent = 'Ingresa los últimos 6 dígitos de la referencia.';
     return;
   }
 
@@ -1000,6 +1001,7 @@ async function solicitarRecarga() {
   try {
     const archivoWebP = await convertirComprobanteAWebP(file);
     const fileName = `recarga_${usuario.id}_${Date.now()}.webp`;
+    rutaComprobanteSubida = fileName;
     btn.textContent = 'Enviando...';
 
     const { error: uploadError } = await supabaseClient.storage
@@ -1026,6 +1028,7 @@ async function solicitarRecarga() {
 
     if (insertError) throw insertError;
     if (!solicitud?.ok) throw new Error(solicitud?.codigo || 'No se pudo registrar la recarga');
+    rutaComprobanteSubida = '';
 
     mensaje.className = 'mensaje-recarga ok';
     mensaje.textContent = '✅ Recarga enviada. Te avisaremos aquí y el saldo se actualizará automáticamente cuando sea aprobada.';
@@ -1036,6 +1039,13 @@ async function solicitarRecarga() {
 
   } catch (error) {
     console.error(error);
+    if (rutaComprobanteSubida) {
+      try {
+        await supabaseClient.storage.from('comprobantes').remove([rutaComprobanteSubida]);
+      } catch (limpiezaError) {
+        console.warn('No se pudo limpiar el comprobante huérfano:', limpiezaError);
+      }
+    }
     mensaje.className = 'mensaje-recarga error';
     mensaje.textContent = `❌ Error enviando recarga: ${error.message || 'intenta nuevamente'}`;
   } finally {
