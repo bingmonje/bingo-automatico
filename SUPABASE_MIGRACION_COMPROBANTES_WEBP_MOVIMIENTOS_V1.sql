@@ -155,6 +155,43 @@ grant execute on function public.bingo_admin_marcar_comprobante_recarga_eliminad
 grant execute on function public.bingo_admin_listar_movimientos_pago_seguro(text)
   to anon, authenticated;
 
+create or replace function public.bingo_storage_puede_borrar_comprobante_recarga(p_nombre text)
+returns boolean
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+begin
+  if coalesce(p_nombre, '') !~ '^recarga_[0-9]+_[0-9]+\.webp$' then
+    return false;
+  end if;
+
+  return exists (
+    select 1
+      from public.recargas_bingo r
+     where r.estado in ('aprobado', 'rechazado')
+       and r.comprobante_url is not null
+       and lower(split_part(r.comprobante_url, '?', 1))
+           like '%/comprobantes/' || lower(p_nombre)
+  );
+end;
+$$;
+
+revoke all on function public.bingo_storage_puede_borrar_comprobante_recarga(text)
+  from public, anon, authenticated;
+grant execute on function public.bingo_storage_puede_borrar_comprobante_recarga(text)
+  to anon, authenticated;
+
+drop policy if exists bingo_borrar_comprobantes_recargas_procesadas on storage.objects;
+create policy bingo_borrar_comprobantes_recargas_procesadas
+  on storage.objects
+  for delete
+  to anon, authenticated
+  using (
+    bucket_id = 'comprobantes'
+    and public.bingo_storage_puede_borrar_comprobante_recarga(name)
+  );
 notify pgrst, 'reload schema';
 
 commit;
