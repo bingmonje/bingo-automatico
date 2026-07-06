@@ -522,6 +522,8 @@
 
     .winner-display.active { display: block; animation: winnerPulse 1s ease; }
 
+    .winner-display p { white-space: pre-line; line-height: 1.5; }
+
     @keyframes winnerPulse {
       0% { transform: scale(0.8); opacity: 0; }
       100% { transform: scale(1); opacity: 1; }
@@ -3225,3 +3227,4 @@ ${errores.join('\n')}`);
   </script>
 </body>
 </html>
+
