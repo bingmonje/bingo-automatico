@@ -1,0 +1,4 @@
+project_id = "okwkwgrecwxydjcezcdn"
+
+[functions.bingo-push]
+verify_jwt = false

@@ -4,7 +4,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#ffa500">
   <title>Mi Cuenta - Bingo Express GP</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
   <style>
@@ -212,6 +215,17 @@
     .btn-secundario:hover {
       background: var(--primary);
       color: #000;
+    }
+
+    .btn-secundario.push-activo {
+      border-color: var(--success);
+      color: #7dffad;
+      background: rgba(39, 174, 96, 0.14);
+    }
+
+    .btn-secundario.push-error {
+      border-color: var(--warning);
+      color: var(--warning);
     }
 
     .mensaje-recarga {
@@ -484,6 +498,10 @@
       💬 Soporte por WhatsApp
     </button>
 
+    <button id="btnPushCliente" class="btn-secundario" onclick="activarPushCliente()">
+      🔕 Activar notificaciones
+    </button>
+
     <button class="btn-secundario" onclick="cerrarSesion()">
       Cerrar sesión
     </button>
@@ -588,6 +606,7 @@
 
   <script src="moneda.js?v=20260704"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="push.js?v=20260706"></script>
 
   <script>
     const SUPABASE_URL = 'https://okwkwgrecwxydjcezcdn.supabase.co';
@@ -662,6 +681,26 @@
       } catch {
         return null;
       }
+    }
+
+    async function activarPushCliente() {
+      const usuario = requerirSesion();
+      if (!usuario) return;
+      await window.BingoPush?.activar({
+        supabaseClient,
+        token: usuario.token || '',
+        tipo: 'cliente',
+        boton: document.getElementById('btnPushCliente')
+      });
+    }
+
+    async function sincronizarPushCliente(usuario) {
+      await window.BingoPush?.sincronizar({
+        supabaseClient,
+        token: usuario.token || '',
+        tipo: 'cliente',
+        boton: document.getElementById('btnPushCliente')
+      });
     }
 
     async function cerrarSesion() {
@@ -1229,6 +1268,7 @@ async function solicitarRecarga() {
       const inicial = await cargarCuenta();
       ultimoEstadoCuenta = inicial?.estado || null;
       await restaurarDatosRetiro(usuario);
+      await sincronizarPushCliente(usuario);
       iniciarTiempoRealRecargas(usuario);
     }
 
