@@ -810,7 +810,7 @@
   <div id="modalGanador" class="modal-ganador">
     <div class="ganador-content">
       <h1>🎉 ¡BINGO! 🎉</h1>
-      <h2 id="ganadorTexto" style="color: #000; margin-bottom: 20px;"></h2>
+      <h2 id="ganadorTexto" style="color: #000; margin-bottom: 20px; white-space: pre-line; line-height: 1.45;"></h2>
       <p id="ganadorDescripcion" style="color: #000; font-size: 1.2em; margin-bottom: 30px;">
         ¡Cartón completo! Has ganado el premio.
       </p>
@@ -1662,9 +1662,7 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
       if (repartoFila?.ok && !repartoFila.duplicado) {
         await mostrarPremioTemporal(
           '🎉 ¡PREMIO POR FILA!',
-          repartoFila.totalGanadores > 1
-            ? `Se dividió entre ${repartoFila.totalGanadores} ganadores. ${formatearBs(repartoFila.montoPorGanador)} c/u`
-            : `${info.nombre} ganó con el cartón #${numeroCarton}`
+          repartoFila.ganadoresTexto || `${info.nombre} — Cartón #${numeroCarton}`
         );
         return;
       }
@@ -1676,9 +1674,7 @@ async function mostrarPremioTemporal(titulo, subtitulo) {
       if (repartoColumna?.ok && !repartoColumna.duplicado) {
         await mostrarPremioTemporal(
           '🎉 ¡PREMIO POR COLUMNA!',
-          repartoColumna.totalGanadores > 1
-            ? `Se dividió entre ${repartoColumna.totalGanadores} ganadores. ${formatearBs(repartoColumna.montoPorGanador)} c/u`
-            : `${info.nombre} ganó con el cartón #${numeroCarton}`
+          repartoColumna.ganadoresTexto || `${info.nombre} — Cartón #${numeroCarton}`
         );
         return;
       }
@@ -2113,9 +2109,12 @@ const info = obtenerInfoCarton(numeroCarton);
       premiosMostrados.lleno = numero;
       document.querySelector('#modalGanador h1').textContent = '🏆 ¡CARTÓN LLENO! 🏆';
       document.getElementById('ganadorTexto').textContent = nombre;
-      document.getElementById('ganadorDescripcion').textContent = esGanadorLocal
-        ? `¡Cartón #${numero} completo! Has ganado el premio.`
-        : `¡Cartón #${numero} completo! Ganador del premio.`;
+      const hayVariosGanadores = nombre.includes('\n');
+      document.getElementById('ganadorDescripcion').textContent = hayVariosGanadores
+        ? 'Varios cartones completaron el premio al mismo tiempo.'
+        : esGanadorLocal
+          ? `¡Cartón #${numero} completo! Has ganado el premio.`
+          : `¡Cartón #${numero} completo! Ganador del premio.`;
       if (botonCerrar) botonCerrar.style.display = 'inline-block';
       modal.classList.add('activo');
       crearConfeti();
@@ -2218,6 +2217,7 @@ async function reclamarPremioEnServidor(tipoPremio, numeroCarton, info) {
     ganadores: data?.ganadores || ganadores,
     montoPorGanador: Number(data?.monto_por_ganador || 0),
     totalGanadores: Number(data?.total_ganadores || ganadores.length),
+    ganadoresTexto: String(data?.ganadores_texto || ''),
     codigo: data?.codigo
   };
 }
