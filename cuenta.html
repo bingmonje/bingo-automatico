@@ -226,6 +226,43 @@
     .mensaje-recarga.error { color: var(--danger); }
     .mensaje-recarga.warn { color: var(--warning); }
 
+    .aviso-horario {
+      max-width: 680px;
+      margin: 0 auto 22px;
+      padding: 16px 18px;
+      border: 2px solid var(--secondary);
+      border-radius: 16px;
+      background: rgba(249, 217, 73, 0.12);
+      color: #fff4a8;
+      text-align: center;
+      font-weight: 900;
+      line-height: 1.55;
+      box-shadow: 0 0 20px rgba(249, 217, 73, 0.16);
+      animation: titilarHorario 1.15s ease-in-out infinite;
+    }
+
+    .aviso-horario strong { color: white; }
+
+    .legal-footer {
+      margin: 28px 0 10px;
+      padding: 22px 16px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      text-align: center;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.8;
+    }
+
+    .legal-footer a { color: var(--secondary); margin: 0 8px; }
+
+    @keyframes titilarHorario {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.56; transform: scale(0.99); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .aviso-horario { animation: none; }
+    }
+
     .notificacion-recarga {
       display: none;
       margin: 0 0 20px;
@@ -455,6 +492,11 @@
 
 <div class="card" id="seccionRecarga">
   <h2>💳 Solicitar recarga</h2>
+  <div class="aviso-horario" role="status">
+    ⏰ <strong>HORARIO DE ATENCIÓN</strong><br>
+    Las solicitudes de recarga serán atendidas de lunes a viernes de 8:00 a. m. a 8:00 p. m.<br>
+    Sábados y domingos de 8:00 a. m. a 2:00 p. m.
+  </div>
  <h2>Banco: Mercantil</h2>
 <h2>TLF: 0412-3714136</h2>
   <h2>CI: 26.740.060</h2>
@@ -488,6 +530,11 @@
 
 <div class="card" id="seccionRetiro" style="display: none;">
   <h2>🏧 Solicitar retiro</h2>
+  <div class="aviso-horario" role="status">
+    ⏰ <strong>HORARIO DE ATENCIÓN</strong><br>
+    Las solicitudes de retiro serán atendidas de lunes a viernes de 8:00 a. m. a 8:00 p. m.<br>
+    Sábados y domingos de 8:00 a. m. a 2:00 p. m.
+  </div>
 
   <div class="form-grid">
     <div class="input-group">
@@ -529,6 +576,15 @@
   <h2>📜 Movimientos</h2>
   <div id="listaMovimientos">Cargando movimientos...</div>
 </div>
+
+<footer class="legal-footer">
+  <div>
+    <a href="privacidad.html">Política de privacidad</a>
+    <a href="aviso-legal.html">Aviso legal</a>
+    <a href="terminos-condiciones.html">Términos y condiciones</a>
+  </div>
+  <div>© 2026 Bingo Andino 75 · Solo para mayores de edad · Juega responsablemente</div>
+</footer>
 
   <script src="moneda.js?v=20260704"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
