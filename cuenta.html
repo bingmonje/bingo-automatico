@@ -1034,15 +1034,24 @@ async function convertirComprobanteAWebP(file) {
   contexto.drawImage(imagen, 0, 0, canvas.width, canvas.height);
   if (typeof imagen.close === 'function') imagen.close();
 
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+  const { blob, extension } = await new Promise(resolve => {
+    canvas.toBlob(b => {
+      if (b && b.type === 'image/webp') {
+        resolve({ blob: b, extension: 'webp' });
+      } else {
+        canvas.toBlob(b2 => resolve({ blob: b2, extension: 'jpeg' }), 'image/jpeg', 0.82);
+      }
+    }, 'image/webp', 0.82);
+  });
+
   canvas.width = 1;
   canvas.height = 1;
 
-  if (!blob || blob.type !== 'image/webp') {
-    throw new Error('Este navegador no pudo convertir la imagen a WebP.');
+  if (!blob) {
+    throw new Error('Este navegador no pudo procesar la imagen.');
   }
 
-  return blob;
+  return { blob, extension };
 }
 
 async function solicitarRecarga() {
@@ -1091,18 +1100,18 @@ async function solicitarRecarga() {
   }
 
   btn.disabled = true;
-  btn.textContent = 'Convirtiendo a WebP...';
+  btn.textContent = 'Procesando imagen...';
 
   try {
-    const archivoWebP = await convertirComprobanteAWebP(file);
-    const fileName = `recarga_${usuario.id}_${Date.now()}.webp`;
+    const { blob: archivoProcesado, extension } = await convertirComprobanteAWebP(file);
+    const fileName = `recarga_${usuario.id}_${Date.now()}.${extension}`;
     rutaComprobanteSubida = fileName;
     btn.textContent = 'Enviando...';
 
     const { error: uploadError } = await supabaseClient.storage
       .from('comprobantes')
-      .upload(fileName, archivoWebP, {
-        contentType: 'image/webp',
+      .upload(fileName, archivoProcesado, {
+        contentType: extension === 'webp' ? 'image/webp' : 'image/jpeg',
         cacheControl: '3600',
         upsert: false
       });
