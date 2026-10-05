@@ -1104,7 +1104,7 @@ async function solicitarRecarga() {
 
   try {
     const { blob: archivoProcesado, extension } = await convertirComprobanteAWebP(file);
-    const fileName = `recarga_${usuario.id}_${Date.now()}.${extension}`;
+    const fileName = `recarga_${usuario.id}_${Date.now()}.webp`;
     rutaComprobanteSubida = fileName;
     btn.textContent = 'Enviando...';
 
